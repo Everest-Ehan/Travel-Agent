@@ -9,14 +9,14 @@ from dotenv import load_dotenv
 # Load environment variables from a .env file for security
 load_dotenv()
 
+# Import auth service after loading environment variables
+from auth_service import auth_service
+
 # --- Configuration & Secrets ---
 # IMPORTANT: Create a file named `.env` in the `backend` directory.
-# Add your secret tokens to the .env file like this:
-# BEARER_TOKEN="your_bearer_token_here"
+# Add your session cookie to the .env file like this:
 # SESSION_COOKIE="your_session_cookie_here"
-
-BEARER_TOKEN = os.getenv("BEARER_TOKEN")
-SESSION_COOKIE = os.getenv("SESSION_COOKIE")
+# The bearer token will be automatically fetched from the session API
 
 # --- FastAPI App Initialization ---
 app = FastAPI()
@@ -41,34 +41,39 @@ def get_hotel_data(search_query: str):
     """
     Calls the real Fora Travel API to get hotel data based on a search query.
     """
-    if not BEARER_TOKEN or not SESSION_COOKIE:
-        raise HTTPException(status_code=500, detail="Server is missing authentication tokens. Check your .env file.")
-
-    # Dynamically construct the API URL with the user's search query
-    api_url = f"https://api.fora.travel/v1/supplier-database/suppliers/hotel/?search={search_query}&ordering=sequence&view_mode=list&limit=20"
-
-    cookies = {
-        '__Secure-next-auth.session-token': SESSION_COOKIE,
-    }
-
-    headers = {
-        'Authorization': f'Bearer {BEARER_TOKEN}',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'application/json',
-        'Referer': 'https://advisor.fora.travel/partners/hotels'
-    }
-
     try:
+        # Get authentication headers with automatic token refresh
+        headers = auth_service.get_auth_headers()
+        cookies = auth_service.get_session_cookies()
+        
+        # Dynamically construct the API URL with the user's search query
+        api_url = f"https://api.fora.travel/v1/supplier-database/suppliers/hotel/?search={search_query}&ordering=sequence&view_mode=list&limit=20"
+
+        print(f"Making hotel search request to: {api_url}")
+        print(f"Using auth headers: {headers}")
+        
         response = requests.get(api_url, headers=headers, cookies=cookies, timeout=20)
         response.raise_for_status()  # Raise an exception for bad status codes (4xx or 5xx)
         return response.json()
     except requests.exceptions.HTTPError as e:
         if e.response.status_code in [401, 403]:
-            raise HTTPException(status_code=401, detail="Authentication failed. The Bearer Token or session cookie may be expired.")
+            # Try to refresh token and retry once
+            try:
+                print("Authentication failed, attempting token refresh...")
+                headers = auth_service.get_auth_headers(force_refresh=True)
+                response = requests.get(api_url, headers=headers, cookies=cookies, timeout=20)
+                response.raise_for_status()
+                return response.json()
+            except Exception as refresh_error:
+                print(f"Token refresh failed: {refresh_error}")
+                raise HTTPException(status_code=401, detail="Authentication failed. Please check your session cookie.")
         else:
             raise HTTPException(status_code=e.response.status_code, detail=f"API request failed: {e.response.reason}")
     except requests.exceptions.RequestException as e:
         raise HTTPException(status_code=500, detail=f"A network error occurred: {e}")
+    except Exception as e:
+        print(f"Unexpected error in get_hotel_data: {e}")
+        raise HTTPException(status_code=500, detail="An internal server error occurred.")
 
 
 # --- API Endpoint ---
@@ -93,27 +98,14 @@ def get_rate_summary(request_data: dict):
     """
     Calls the Fora Travel rate summary API to get hotel rates.
     """
-    if not BEARER_TOKEN or not SESSION_COOKIE:
-        raise HTTPException(status_code=500, detail="Server is missing authentication tokens. Check your .env file.")
-
-    # Use the correct API endpoint
-    api_url = "https://api1.fora.travel/v2/supplier/rate_summary/"
-
-    cookies = {
-        '__Secure-next-auth.session-token': SESSION_COOKIE,
-    }
-
-    headers = {
-        'Authorization': f'Bearer {BEARER_TOKEN}',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Referer': 'https://advisor.fora.travel/partners/hotels',
-        'Origin': 'https://advisor.fora.travel',
-        'X-Requested-With': 'XMLHttpRequest'
-    }
-
     try:
+        # Get authentication headers with automatic token refresh
+        headers = auth_service.get_auth_headers()
+        cookies = auth_service.get_session_cookies()
+        
+        # Use the correct API endpoint
+        api_url = "https://api1.fora.travel/v2/supplier/rate_summary/"
+
         print(f"Making request to: {api_url}")
         print(f"Headers: {headers}")
         print(f"Request payload: {json.dumps(request_data, indent=2)}")
@@ -123,6 +115,7 @@ def get_rate_summary(request_data: dict):
         print(f"Response status: {response.status_code}")
         print(f"Response headers: {dict(response.headers)}")
         print(f"Response content: {response.text}")
+        
         if not response.ok:
             print(f"Response content: {response.text}")
             
@@ -131,12 +124,24 @@ def get_rate_summary(request_data: dict):
     except requests.exceptions.HTTPError as e:
         print(f"HTTP Error: {e.response.status_code} - {e.response.text}")
         if e.response.status_code in [401, 403]:
-            raise HTTPException(status_code=401, detail="Authentication failed. The Bearer Token or session cookie may be expired.")
+            # Try to refresh token and retry once
+            try:
+                print("Authentication failed, attempting token refresh...")
+                headers = auth_service.get_auth_headers(force_refresh=True)
+                response = requests.post(api_url, headers=headers, cookies=cookies, json=request_data, timeout=20)
+                response.raise_for_status()
+                return response.json()
+            except Exception as refresh_error:
+                print(f"Token refresh failed: {refresh_error}")
+                raise HTTPException(status_code=401, detail="Authentication failed. Please check your session cookie.")
         else:
             raise HTTPException(status_code=e.response.status_code, detail=f"Rate API request failed: {e.response.reason} - {e.response.text}")
     except requests.exceptions.RequestException as e:
         print(f"Request Exception: {e}")
         raise HTTPException(status_code=500, detail=f"A network error occurred: {e}")
+    except Exception as e:
+        print(f"Unexpected error in get_rate_summary: {e}")
+        raise HTTPException(status_code=500, detail="An internal server error occurred.")
 
 @app.post("/api/rates")
 async def get_rates(request: Request):
@@ -222,8 +227,8 @@ def test_rates():
     """
     Test endpoint to check if the rate API is working with a simple request
     """
-    if not BEARER_TOKEN or not SESSION_COOKIE:
-        return {"error": "Missing authentication tokens"}
+    if not auth_service.is_authenticated():
+        return {"error": "Not authenticated. Please check your session cookie."}
     
     test_request = {
         "currency": "USD",
@@ -239,4 +244,28 @@ def test_rates():
         result = get_rate_summary(test_request)
         return {"status": "success", "data": result}
     except Exception as e:
-        return {"status": "error", "message": str(e)} 
+        return {"status": "error", "message": str(e)}
+
+@app.get("/auth/status")
+def auth_status():
+    """
+    Check authentication status and user info
+    """
+    try:
+        if auth_service.is_authenticated():
+            user_info = auth_service.get_user_info()
+            return {
+                "status": "authenticated",
+                "user": user_info,
+                "message": "Authentication successful"
+            }
+        else:
+            return {
+                "status": "not_authenticated",
+                "message": "Please check your session cookie"
+            }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e)
+        } 

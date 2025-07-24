@@ -13,17 +13,16 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   
-  // Search filters state
-  const [filters, setFilters] = useState({
-    adults: 2,
-    children_ages: [] as number[],
-    currency: 'USD',
-    start_date: '2025-08-14',
-    end_date: '2025-08-22',
-    rooms: 1,
-    view_mode: 'list',
-    supplierType: 'hotels'
-  })
+          // Search filters state
+        const [filters, setFilters] = useState({
+          adults: 2,
+          children_ages: [] as number[],
+          currency: 'USD',
+          start_date: '2025-08-14',
+          end_date: '2025-08-22',
+          rooms: 1,
+          supplierType: 'hotels'
+        })
 
   // Restore hotels from localStorage on mount
   useEffect(() => {
@@ -242,7 +241,7 @@ export default function Home() {
                 <button
                   onClick={searchHotels}
                   disabled={loading}
-                  className="w-full bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 disabled:from-gray-400 disabled:to-gray-500 text-white px-8 py-4 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none"
+                  className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 text-white px-8 py-4 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center shadow-md hover:shadow-lg active:transform active:scale-95 disabled:transform-none"
                 >
                   {loading ? (
                     <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -281,37 +280,7 @@ export default function Home() {
                 </label>
               </div>
               
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-700">View:</span>
-                <div className="flex bg-white rounded-lg border border-gray-200 p-1">
-                  <button
-                    onClick={() => setFilters({...filters, view_mode: 'list'})}
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
-                      filters.view_mode === 'list' 
-                        ? 'bg-primary-600 text-white shadow-sm' 
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                    </svg>
-                    List
-                  </button>
-                  <button
-                    onClick={() => setFilters({...filters, view_mode: 'map'})}
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
-                      filters.view_mode === 'map' 
-                        ? 'bg-primary-600 text-white shadow-sm' 
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 4m0 13V4m-6 3l6-3" />
-                    </svg>
-                    Map
-                  </button>
-                </div>
-              </div>
+
             </div>
           </div>
         </div>
