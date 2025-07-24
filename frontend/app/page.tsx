@@ -9,6 +9,7 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('')
   const [hotels, setHotels] = useState<Hotel[]>([])
   const [loading, setLoading] = useState(false)
+  const [loadingRates, setLoadingRates] = useState<{ [key: string]: boolean }>({})
   const [error, setError] = useState('')
   
           // Search filters state
@@ -27,12 +28,20 @@ export default function Home() {
 
     setLoading(true)
     setError('')
+    setLoadingRates({})
 
     try {
-      // Search for hotels
+      // First, search for hotels and display them immediately
       const hotels = await ApiService.searchHotels(searchQuery)
       
-      // Get rates for the hotels (in batches of 10 due to API limit)
+      // Set hotels immediately without rates
+      const hotelsWithoutRates = hotels.map(hotel => ({
+        ...hotel,
+        rate: undefined
+      }))
+      setHotels(hotelsWithoutRates)
+      
+      // Now fetch rates progressively
       if (hotels.length > 0) {
         const hotelIds = hotels.map(hotel => hotel.id)
         const batchSize = 10
@@ -42,6 +51,13 @@ export default function Home() {
           const batch = hotelIds.slice(i, i + batchSize)
           rateBatches.push(batch)
         }
+        
+        // Set loading state for all hotels
+        const initialLoadingState: { [key: string]: boolean } = {}
+        hotelIds.forEach(id => {
+          initialLoadingState[id] = true
+        })
+        setLoadingRates(initialLoadingState)
         
         let allRates: any[] = []
         
@@ -60,22 +76,34 @@ export default function Home() {
             const rateResponse = await ApiService.getRateSummary(rateRequest)
             if (rateResponse.data) {
               allRates.push(...rateResponse.data)
+              
+              // Update hotels with rates as they come in
+              const updatedHotels = hotelsWithoutRates.map(hotel => {
+                const rate = allRates.find(r => r.id === hotel.id)
+                return {
+                  ...hotel,
+                  rate: rate || undefined
+                }
+              })
+              setHotels(updatedHotels)
+              
+              // Update loading states for this batch
+              const updatedLoadingState = { ...loadingRates }
+              batch.forEach(id => {
+                updatedLoadingState[id] = false
+              })
+              setLoadingRates(updatedLoadingState)
             }
           } catch (rateError) {
             console.warn('Failed to fetch rates for batch:', rateError)
+            // Mark this batch as not loading even if it failed
+            const updatedLoadingState = { ...loadingRates }
+            batch.forEach(id => {
+              updatedLoadingState[id] = false
+            })
+            setLoadingRates(updatedLoadingState)
           }
         }
-        
-        // Merge rates with hotels
-        const hotelsWithRates = hotels.map(hotel => {
-          const rate = allRates.find(r => r.id === hotel.id)
-          return {
-            ...hotel,
-            rate: rate || undefined
-          }
-        })
-        
-        setHotels(hotelsWithRates)
       } else {
         setHotels([])
       }
@@ -262,7 +290,92 @@ export default function Home() {
         )}
 
         {/* Results Section */}
-        {hotels.length > 0 && (
+        {loading && hotels.length === 0 ? (
+          <div className="space-y-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-3xl font-bold text-gray-900">
+                  Searching Hotels...
+                </h3>
+                <p className="text-gray-600 mt-1">
+                  Finding the best hotels for your search
+                </p>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 text-sm text-primary-600">
+                  <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-primary-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Loading hotels...</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Skeleton Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
+                  {/* Skeleton Image */}
+                  <div className="relative h-48 bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse">
+                    <div className="absolute top-3 left-3">
+                      <div className="h-6 w-12 bg-gray-300 rounded-full animate-pulse"></div>
+                    </div>
+                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-gray-300 to-transparent">
+                      <div className="h-6 bg-gray-300 rounded animate-pulse mb-2"></div>
+                      <div className="h-4 bg-gray-300 rounded animate-pulse w-2/3"></div>
+                    </div>
+                  </div>
+                  
+                  {/* Skeleton Content */}
+                  <div className="p-5">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="h-4 w-4 bg-gray-300 rounded animate-pulse"></div>
+                      <div className="h-4 bg-gray-300 rounded animate-pulse w-32"></div>
+                      <div className="flex gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <div key={star} className="h-3 w-3 bg-gray-300 rounded animate-pulse"></div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2 mb-4">
+                      <div className="h-4 bg-gray-300 rounded animate-pulse"></div>
+                      <div className="h-4 bg-gray-300 rounded animate-pulse w-3/4"></div>
+                    </div>
+                    
+                    {/* Skeleton Rate Section */}
+                    <div className="mb-4 p-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl">
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex-1">
+                          <div className="h-8 bg-gray-300 rounded animate-pulse mb-2"></div>
+                          <div className="h-4 bg-gray-300 rounded animate-pulse w-2/3"></div>
+                        </div>
+                        <div className="text-right">
+                          <div className="h-4 bg-gray-300 rounded animate-pulse w-20 mb-2"></div>
+                          <div className="h-6 bg-gray-300 rounded animate-pulse w-16"></div>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[1, 2, 3].map((i) => (
+                          <div key={i} className="bg-white/70 rounded-lg p-2">
+                            <div className="h-3 bg-gray-300 rounded animate-pulse mb-1"></div>
+                            <div className="h-4 bg-gray-300 rounded animate-pulse"></div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-3">
+                      <div className="flex-1 h-10 bg-gray-300 rounded-xl animate-pulse"></div>
+                      <div className="w-12 h-10 bg-gray-300 rounded-xl animate-pulse"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : hotels.length > 0 && (
           <div className="space-y-8">
             <div className="flex items-center justify-between">
               <div>
@@ -285,7 +398,11 @@ export default function Home() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
               {hotels.map((hotel) => (
-                <HotelCard key={hotel.id} hotel={hotel} />
+                <HotelCard 
+                  key={hotel.id} 
+                  hotel={hotel} 
+                  loadingRate={loadingRates[hotel.id] || false}
+                />
               ))}
             </div>
           </div>
