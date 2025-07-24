@@ -12,6 +12,7 @@ export default function Home() {
   const [hotels, setHotels] = useState<Hotel[]>([])
   const [loading, setLoading] = useState(false)
   const [loadingRates, setLoadingRates] = useState<{ [key: string]: boolean }>({})
+  const [loadingCard, setLoadingCard] = useState<string | null>(null)
   const [error, setError] = useState('')
   
           // Search filters state
@@ -150,6 +151,8 @@ export default function Home() {
   }
 
   const handleCardClick = async (hotel: Hotel) => {
+    setLoadingCard(hotel.id)
+    
     const hotelDetailsParams = {
       currency: filters.currency,
       dates: `${filters.start_date}-${filters.end_date}`,
@@ -157,6 +160,7 @@ export default function Home() {
       children_ages: filters.children_ages?.join(',') || '',
       rooms: filters.rooms,
     };
+    
     try {
       const details = await ApiService.fetchHotelDetails(hotel.id, hotelDetailsParams);
       console.log('Hotel details received:', details);
@@ -164,6 +168,7 @@ export default function Home() {
       router.push(`/hotel/${hotel.id}?${new URLSearchParams(hotelDetailsParams as any).toString()}`);
     } catch (err) {
       console.error('Error in hotel details request:', err);
+      setLoadingCard(null) // Clear loading on error
     }
   }
 
@@ -443,14 +448,15 @@ export default function Home() {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-              {hotels.map((hotel) => (
+                            {hotels.map((hotel) => (
                 <HotelCard 
-                key={hotel.id} 
-                hotel={hotel} 
-                filters={filters} 
-                onClick={() => handleCardClick(hotel)} 
-                loadingRate={loadingRates[hotel.id] || false}
-                />
+                  key={hotel.id} 
+                  hotel={hotel} 
+                  filters={filters} 
+                  onClick={() => handleCardClick(hotel)} 
+                  loadingRate={loadingRates[hotel.id] || false}
+                  loadingCard={loadingCard === hotel.id}
+                  />
               ))}
             </div>
           </div>
