@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { Hotel } from '../types/hotel'
+import { ApiService } from '../services/api'
 
 interface HotelCardProps {
   hotel: Hotel
@@ -40,11 +41,42 @@ export default function HotelCard({ hotel, loadingRate = false }: HotelCardProps
     return `${rate.lowest_commission}-${rate.highest_commission}%`
   }
 
+  // Handler for card click
+  const handleCardClick = async () => {
+    console.log(`Hotel card clicked: ${hotel.name} (ID: ${hotel.id})`);
+    console.log('Sending request for hotel details...');
+    // Fetch hotel details
+    try {
+      const details = await ApiService.fetchHotelDetails(hotel.id);
+      console.log('Hotel details received:', details);
+    } catch (err) {
+      console.error('Error in hotel details request:', err);
+    }
+    // Prepare correct filter params for filtered hotels
+    const filterParams = {
+      view_mode: filters?.view_mode || 'list',
+      adults: filters?.adults || 2,
+      dates: `${filters?.start_date || '2025-08-11'}-${filters?.end_date || '2025-08-16'}`,
+      rooms: filters?.rooms || 1,
+      q: hotel.name,
+      currency: filters?.currency || 'USD',
+    };
+    console.log('Sending request for filtered hotels with params:', filterParams);
+    try {
+      const filtered = await ApiService.fetchFilteredHotels(filterParams);
+      console.log('Filtered hotels API response:', filtered);
+    } catch (err) {
+      console.error('Error in filtered hotels request:', err);
+    }
+  }
+
   return (
-    <div className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border border-gray-100">
-      {/* Header Section with Image */}
-      <div className="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
-        {hotel.images && hotel.images.length > 0 && (
+
+    <div className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border border-gray-100" onClick={onClick} style={{ cursor: 'pointer' }}>
+      {/* Hotel Image */}
+      {hotel.images && hotel.images.length > 0 && (
+        <div className="relative h-56 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
+
           <img
             src={`https://media.fora.travel/foratravelportal/image/upload/c_fill,w_400,h_300,g_auto/f_auto/q_auto/v1/${hotel.images[0].public_id}`}
             alt={hotel.name}
@@ -78,6 +110,15 @@ export default function HotelCard({ hotel, loadingRate = false }: HotelCardProps
               </span>
             ))
           )}
+
+          
+          {/* Favorite Button */}
+          <button className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-lg hover:bg-white transition-all duration-200" onClick={e => e.stopPropagation()}>
+            <svg className="w-5 h-5 text-gray-600 hover:text-red-500 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+          </button>
+
         </div>
 
         {/* Favorite Button */}
@@ -283,7 +324,10 @@ export default function HotelCard({ hotel, loadingRate = false }: HotelCardProps
               href={hotel.gmaps_link}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg active:transform active:scale-95"
+
+              className="flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              onClick={e => e.stopPropagation()}
+
             >
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>

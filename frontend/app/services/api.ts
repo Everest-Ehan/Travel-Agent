@@ -13,6 +13,7 @@ export class ApiService {
       }
 
       const data = await response.json()
+      console.log('API /api/search response:', data)
       
       // Transform the API response to match our Hotel interface
       const transformedHotels = data.results?.map((hotel: any) => ({
@@ -56,13 +57,59 @@ export class ApiService {
 
       if (!response.ok) {
         const errorData = await response.json()
+        console.log('API /api/rates error response:', errorData)
         throw new Error(errorData.detail || 'Failed to fetch rates')
       }
 
-      return await response.json()
+      const rateData = await response.json()
+      console.log('API /api/rates response:', rateData)
+      return rateData
     } catch (error) {
       console.error('Error fetching rates:', error)
       throw error
+    }
+  }
+
+  // Fetch hotel details by ID (for card click)
+  static async fetchHotelDetails(hotelId: string, params?: Record<string, any>) {
+    let url = `${API_BASE_URL}/api/hotel-details/${hotelId}`;
+    if (params) {
+      const query = new URLSearchParams(params as any).toString();
+      url += `?${query}`;
+    }
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error fetching hotel details:', errorData);
+        throw new Error(errorData.detail || 'Failed to fetch hotel details');
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching hotel details:', error);
+      throw error;
+    }
+  }
+
+  // Fetch filtered hotel list (with user filters)
+  static async fetchFilteredHotels(params: {view_mode: string, adults: number, dates: string, rooms: number, q: string, currency: string}) {
+    // Call backend proxy endpoint
+    const query = new URLSearchParams(params as any).toString();
+    const url = `${API_BASE_URL}/api/filtered-hotels?${query}`;
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error fetching filtered hotels:', errorData);
+        throw new Error(errorData.detail || 'Failed to fetch filtered hotels');
+      }
+      const data = await response.json();
+      console.log('Filtered hotels response:', data);
+      return data;
+    } catch (error) {
+      console.error('Error fetching filtered hotels:', error);
+      throw error;
     }
   }
 } 

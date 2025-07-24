@@ -1,7 +1,7 @@
 import os
 import requests
 import json
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Path
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Request
 from dotenv import load_dotenv
@@ -24,9 +24,9 @@ app = FastAPI()
 # Configure CORS (Cross-Origin Resource Sharing)
 # This allows your Next.js frontend (running on localhost:3000)
 # to make requests to this backend (running on localhost:8000).
-origins = [
-    "http://localhost:3000",
-]
+
+# Allow all origins for development (do not use in production)
+origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
@@ -85,6 +85,7 @@ async def search_hotels(query: str = Query(..., min_length=2, description="The s
     print(f"Received search request for: '{query}'")
     try:
         data = get_hotel_data(query)
+        print(f"/api/search result: {json.dumps(data, indent=2)}")
         return data
     except HTTPException as e:
         # Re-raise HTTPException to let FastAPI handle the response
@@ -166,12 +167,56 @@ async def get_rates(request: Request):
             raise HTTPException(status_code=400, detail="supplier_ids cannot have more than 10 elements")
         
         data = get_rate_summary(request_data)
+        print(f"/api/rates result: {json.dumps(data, indent=2)}")
         return data
     except HTTPException as e:
         raise e
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
         raise HTTPException(status_code=500, detail="An internal server error occurred.")
+
+@app.get('/api/hotel-details/{hotel_id}')
+def get_hotel_details(hotel_id: str = Path(...)):
+    if not BEARER_TOKEN or not SESSION_COOKIE:
+        raise HTTPException(status_code=500, detail="Server is missing authentication tokens. Check your .env file.")
+    url = f'https://api.fora.travel/v1/supplier-database/suppliers/{hotel_id}'
+    cookies = {
+        '__Secure-next-auth.session-token': SESSION_COOKIE,
+    }
+    headers = {
+        'Authorization': f'Bearer {BEARER_TOKEN}',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'application/json',
+        'Referer': 'https://advisor.fora.travel/partners/hotels'
+    }
+    try:
+        response = requests.get(url, headers=headers, cookies=cookies, timeout=20)
+        response.raise_for_status()
+        print(f"/api/hotel-details/{hotel_id} result: {response.text}")
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch hotel details: {e}")
+
+@app.get('/api/filtered-hotels')
+def get_filtered_hotels(view_mode: str, adults: int, dates: str, rooms: int, q: str, currency: str):
+    if not BEARER_TOKEN or not SESSION_COOKIE:
+        raise HTTPException(status_code=500, detail="Server is missing authentication tokens. Check your .env file.")
+    url = f'https://advisor.fora.travel/partners/hotels?view_mode={view_mode}&adults={adults}&dates={dates}&rooms={rooms}&q={q}&currency={currency}'
+    cookies = {
+        '__Secure-next-auth.session-token': SESSION_COOKIE,
+    }
+    headers = {
+        'Authorization': f'Bearer {BEARER_TOKEN}',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'application/json',
+        'Referer': 'https://advisor.fora.travel/partners/hotels'
+    }
+    try:
+        response = requests.get(url, headers=headers, cookies=cookies, timeout=20)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch filtered hotels: {e}")
 
 @app.get("/")
 def read_root():

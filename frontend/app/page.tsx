@@ -1,11 +1,13 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Hotel } from './types/hotel'
 import { ApiService } from './services/api'
+import { useRouter } from 'next/navigation'
 import HotelCard from './components/HotelCard'
 
 export default function Home() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('')
   const [hotels, setHotels] = useState<Hotel[]>([])
   const [loading, setLoading] = useState(false)
@@ -22,6 +24,20 @@ export default function Home() {
           rooms: 1,
           supplierType: 'hotels'
         })
+
+  // Restore hotels from localStorage on mount
+  useEffect(() => {
+    const savedHotels = localStorage.getItem('hotels');
+    const savedQuery = localStorage.getItem('searchQuery');
+    if (savedHotels) setHotels(JSON.parse(savedHotels));
+    if (savedQuery) setSearchQuery(savedQuery);
+  }, []);
+
+  // Save hotels to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('hotels', JSON.stringify(hotels));
+    localStorage.setItem('searchQuery', searchQuery);
+  }, [hotels, searchQuery]);
 
   const searchHotels = async () => {
     if (!searchQuery.trim()) return
@@ -74,6 +90,7 @@ export default function Home() {
 
           try {
             const rateResponse = await ApiService.getRateSummary(rateRequest)
+            console.log('Rate response for batch', batch, ':', rateResponse)
             if (rateResponse.data) {
               allRates.push(...rateResponse.data)
               
@@ -104,6 +121,17 @@ export default function Home() {
             setLoadingRates(updatedLoadingState)
           }
         }
+
+        // Merge rates with hotels
+        const hotelsWithRates = hotels.map(hotel => {
+          const rate = allRates.find(r => r.id === hotel.id)
+          return {
+            ...hotel,
+            rate: rate || undefined
+          }
+        })
+        console.log('Hotels with merged rates:', hotelsWithRates)
+        setHotels(hotelsWithRates)
       } else {
         setHotels([])
       }
@@ -121,8 +149,26 @@ export default function Home() {
     }
   }
 
+  const handleCardClick = async (hotel: Hotel) => {
+    const hotelDetailsParams = {
+      currency: filters.currency,
+      dates: `${filters.start_date}-${filters.end_date}`,
+      adults: filters.adults,
+      children_ages: filters.children_ages?.join(',') || '',
+      rooms: filters.rooms,
+    };
+    try {
+      const details = await ApiService.fetchHotelDetails(hotel.id, hotelDetailsParams);
+      console.log('Hotel details received:', details);
+      // Navigate to details page with hotel id and params
+      router.push(`/hotel/${hotel.id}?${new URLSearchParams(hotelDetailsParams as any).toString()}`);
+    } catch (err) {
+      console.error('Error in hotel details request:', err);
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -140,7 +186,7 @@ export default function Home() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
         {/* Search Section */}
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold text-gray-900 mb-4">
@@ -399,9 +445,11 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
               {hotels.map((hotel) => (
                 <HotelCard 
-                  key={hotel.id} 
-                  hotel={hotel} 
-                  loadingRate={loadingRates[hotel.id] || false}
+                key={hotel.id} 
+                hotel={hotel} 
+                filters={filters} 
+                onClick={() => handleCardClick(hotel)} 
+                loadingRate={loadingRates[hotel.id] || false}
                 />
               ))}
             </div>
@@ -426,8 +474,21 @@ export default function Home() {
         )}
       </main>
 
+      {/* Loading Overlay */}
+      {loading && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-8 shadow-lg flex flex-col items-center">
+            <svg className="animate-spin h-8 w-8 text-primary-600 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span className="text-lg font-semibold text-primary-700">Loading hotels...</span>
+          </div>
+        </div>
+      )}
+
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12 mt-16">
+      <footer className="bg-gray-900 text-white py-12 mt-16 w-full mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <p className="text-gray-400">
