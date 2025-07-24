@@ -19,6 +19,16 @@ export interface Hotel {
   gmaps_link?: string
   coordinates?: {latitude: number, longitude: number}
   rate?: RateInfo
+  description?: string
+  contact_info?: {
+    phones?: Array<{ number: string }>
+    emails?: Array<any>
+  }
+  physical_address_1?: string
+  physical_city?: string
+  physical_state?: string
+  physical_country?: string
+  physical_postal_code?: string
 }
 
 export interface RateInfo {
