@@ -43,34 +43,38 @@ export default function HotelCard({ hotel }: HotelCardProps) {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+    <div className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border border-gray-100">
       {/* Hotel Image */}
       {hotel.images && hotel.images.length > 0 && (
-        <div className="relative h-48 bg-gray-200">
+        <div className="relative h-56 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
           <img
             src={`https://media.fora.travel/foratravelportal/image/upload/c_fill,w_400,h_300,g_auto/f_auto/q_auto/v1/${hotel.images[0].public_id}`}
             alt={hotel.name}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-transform duration-700 hover:scale-110"
             onError={(e) => {
               e.currentTarget.style.display = 'none'
             }}
           />
+          {/* Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent"></div>
+          
           {/* Hotel Class Badge */}
           {hotel.hotel_class && (
-            <div className="absolute top-3 left-3 bg-black bg-opacity-75 text-white px-2 py-1 rounded text-sm font-semibold">
+            <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm text-gray-900 px-3 py-1.5 rounded-full text-sm font-bold shadow-lg">
               {hotel.hotel_class}★
             </div>
           )}
+          
           {/* Labels */}
           {hotel.labels && hotel.labels.length > 0 && (
-            <div className="absolute top-3 right-3 flex flex-col gap-1">
+            <div className="absolute top-4 right-4 flex flex-col gap-2">
               {hotel.labels.slice(0, 2).map((label, index) => (
                 <span
                   key={index}
-                  className={`px-2 py-1 rounded text-xs font-medium ${
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg backdrop-blur-sm ${
                     label.slug === 'reserve' 
-                      ? 'bg-blue-600 text-white' 
-                      : 'bg-green-600 text-white'
+                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' 
+                      : 'bg-gradient-to-r from-green-500 to-green-600 text-white'
                   }`}
                 >
                   {label.text}
@@ -78,48 +82,69 @@ export default function HotelCard({ hotel }: HotelCardProps) {
               ))}
             </div>
           )}
+          
+          {/* Favorite Button */}
+          <button className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-lg hover:bg-white transition-all duration-200">
+            <svg className="w-5 h-5 text-gray-600 hover:text-red-500 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+          </button>
         </div>
       )}
       
       <div className="p-6">
         {/* Hotel Name and Brand */}
-        <div className="mb-3">
-          <h4 className="text-xl font-bold text-gray-900 mb-1">
+        <div className="mb-4">
+          <h4 className="text-xl font-bold text-gray-900 mb-2 leading-tight">
             {hotel.name}
           </h4>
           {hotel.brand_name && (
-            <p className="text-sm text-gray-500 font-medium">
-              {hotel.brand_name}
-            </p>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
+              <p className="text-sm text-gray-600 font-medium">
+                {hotel.brand_name}
+              </p>
+            </div>
           )}
         </div>
         
         {/* Location */}
-        <p className="text-gray-600 mb-3 flex items-center">
-          <svg className="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          {hotel.location}
-        </p>
+        <div className="mb-4 p-3 bg-gray-50 rounded-xl">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-primary-100 rounded-lg">
+              <svg className="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+            <span className="text-gray-700 font-medium">{hotel.location}</span>
+          </div>
+        </div>
         
         {/* Rating */}
         {hotel.average_review_rating && (
-          <div className="flex items-center mb-3">
-            <div className="flex text-yellow-400">
-              {[...Array(5)].map((_, i) => (
-                <svg
-                  key={i}
-                  className={`w-4 h-4 ${i < Math.round(hotel.average_review_rating!) ? 'fill-current' : 'fill-gray-300'}`}
-                  viewBox="0 0 20 20"
-                >
-                  <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                </svg>
-              ))}
+          <div className="mb-4 p-3 bg-yellow-50 rounded-xl border border-yellow-100">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="flex text-yellow-400">
+                  {[...Array(5)].map((_, i) => (
+                    <svg
+                      key={i}
+                      className={`w-4 h-4 ${i < Math.round(hotel.average_review_rating!) ? 'fill-current' : 'fill-gray-300'}`}
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                    </svg>
+                  ))}
+                </div>
+                <span className="text-sm font-semibold text-gray-700">
+                  {hotel.average_review_rating.toFixed(1)}
+                </span>
+              </div>
+              <span className="text-xs text-gray-500">
+                {hotel.total_review_count} reviews
+              </span>
             </div>
-            <span className="ml-2 text-sm text-gray-600">
-              {hotel.average_review_rating.toFixed(1)} ({hotel.total_review_count} reviews)
-            </span>
           </div>
         )}
         
@@ -158,44 +183,44 @@ export default function HotelCard({ hotel }: HotelCardProps) {
         
         {/* Rate Display */}
         {hotel.rate && (
-          <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-            <div className="space-y-3">
+          <div className="mb-6 p-5 bg-gradient-to-br from-primary-50 to-blue-50 rounded-2xl border border-primary-100">
+            <div className="space-y-4">
               {/* Nightly Rate */}
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-start">
                 <div>
-                  <div className="text-2xl font-bold text-primary-600">
+                  <div className="text-3xl font-bold text-primary-700">
                     {getRateDisplay()}
                   </div>
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-primary-600 font-medium">
                     {getTotalDisplay()}
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-sm text-gray-600">Commission</div>
-                  <div className="text-lg font-semibold text-green-600">
+                  <div className="text-xs text-gray-600 uppercase tracking-wide font-medium">Commission</div>
+                  <div className="text-xl font-bold text-green-600">
                     {getCommissionDisplay()}
                   </div>
                 </div>
               </div>
               
               {/* Additional Rate Info */}
-              <div className="grid grid-cols-2 gap-4 pt-3 border-t border-gray-200">
-                <div>
-                  <div className="text-xs text-gray-500 uppercase tracking-wide">Commissionable</div>
-                  <div className="text-sm font-medium">
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-primary-200">
+                <div className="text-center p-3 bg-white/60 rounded-xl">
+                  <div className="text-xs text-gray-600 uppercase tracking-wide font-medium mb-1">Commissionable</div>
+                  <div className="text-sm font-semibold text-gray-800">
                     {hotel.rate.is_commissionable ? 'Yes' : 'No'}
                   </div>
                 </div>
-                <div>
-                  <div className="text-xs text-gray-500 uppercase tracking-wide">Children Support</div>
-                  <div className="text-sm font-medium capitalize">
+                <div className="text-center p-3 bg-white/60 rounded-xl">
+                  <div className="text-xs text-gray-600 uppercase tracking-wide font-medium mb-1">Children Support</div>
+                  <div className="text-sm font-semibold text-gray-800 capitalize">
                     {hotel.rate.children_support}
                   </div>
                 </div>
                 {hotel.rate.payout_speed && (
-                  <div className="col-span-2">
-                    <div className="text-xs text-gray-500 uppercase tracking-wide">Payout Speed</div>
-                    <div className="text-sm font-medium">
+                  <div className="col-span-2 text-center p-3 bg-white/60 rounded-xl">
+                    <div className="text-xs text-gray-600 uppercase tracking-wide font-medium mb-1">Payout Speed</div>
+                    <div className="text-sm font-semibold text-gray-800">
                       {hotel.rate.payout_speed}
                     </div>
                   </div>
@@ -227,9 +252,9 @@ export default function HotelCard({ hotel }: HotelCardProps) {
         )}
         
         {/* Action Buttons */}
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           {hotel.is_bookable && (
-            <button className="flex-1 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200">
+            <button className="flex-1 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
               Book Now
             </button>
           )}
@@ -238,9 +263,9 @@ export default function HotelCard({ hotel }: HotelCardProps) {
               href={hotel.gmaps_link}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+              className="flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
             >
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
               </svg>
             </a>
