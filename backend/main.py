@@ -3,6 +3,7 @@ import requests
 import json
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import Request
 from dotenv import load_dotenv
 
 # Load environment variables from a .env file for security
@@ -87,6 +88,110 @@ async def search_hotels(query: str = Query(..., min_length=2, description="The s
         print(f"An unexpected error occurred: {e}")
         raise HTTPException(status_code=500, detail="An internal server error occurred.")
 
+def get_rate_summary(request_data: dict):
+    """
+    Calls the Fora Travel rate summary API to get hotel rates.
+    """
+    if not BEARER_TOKEN or not SESSION_COOKIE:
+        raise HTTPException(status_code=500, detail="Server is missing authentication tokens. Check your .env file.")
+
+    # Use the correct API endpoint
+    api_url = "https://api1.fora.travel/v2/supplier/rate_summary/"
+
+    cookies = {
+        '__Secure-next-auth.session-token': SESSION_COOKIE,
+    }
+
+    headers = {
+        'Authorization': f'Bearer {BEARER_TOKEN}',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Referer': 'https://advisor.fora.travel/partners/hotels',
+        'Origin': 'https://advisor.fora.travel',
+        'X-Requested-With': 'XMLHttpRequest'
+    }
+
+    try:
+        print(f"Making request to: {api_url}")
+        print(f"Headers: {headers}")
+        print(f"Request payload: {json.dumps(request_data, indent=2)}")
+        
+        response = requests.post(api_url, headers=headers, cookies=cookies, json=request_data, timeout=20)
+        
+        print(f"Response status: {response.status_code}")
+        print(f"Response headers: {dict(response.headers)}")
+        print(f"Response content: {response.text}")
+        if not response.ok:
+            print(f"Response content: {response.text}")
+            
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.HTTPError as e:
+        print(f"HTTP Error: {e.response.status_code} - {e.response.text}")
+        if e.response.status_code in [401, 403]:
+            raise HTTPException(status_code=401, detail="Authentication failed. The Bearer Token or session cookie may be expired.")
+        else:
+            raise HTTPException(status_code=e.response.status_code, detail=f"Rate API request failed: {e.response.reason} - {e.response.text}")
+    except requests.exceptions.RequestException as e:
+        print(f"Request Exception: {e}")
+        raise HTTPException(status_code=500, detail=f"A network error occurred: {e}")
+
+@app.post("/api/rates")
+async def get_rates(request: Request):
+    """
+    API endpoint to get hotel rates. It takes a JSON payload with all required fields.
+    """
+    try:
+        request_data = await request.json()
+        print(f"Received rate request for {len(request_data.get('supplier_ids', []))} hotels")
+        print(f"Request data: {json.dumps(request_data, indent=2)}")
+        
+        # Validate required fields
+        required_fields = ['currency', 'number_of_adults', 'children_ages', 'start_date', 'end_date', 'supplier_ids']
+        missing_fields = [field for field in required_fields if field not in request_data]
+        
+        if missing_fields:
+            raise HTTPException(status_code=400, detail=f"Missing required fields: {missing_fields}")
+        
+        if not request_data.get('supplier_ids'):
+            raise HTTPException(status_code=400, detail="supplier_ids cannot be empty")
+        
+        if len(request_data.get('supplier_ids', [])) > 10:
+            raise HTTPException(status_code=400, detail="supplier_ids cannot have more than 10 elements")
+        
+        data = get_rate_summary(request_data)
+        return data
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        raise HTTPException(status_code=500, detail="An internal server error occurred.")
+
 @app.get("/")
 def read_root():
-    return {"status": "FastAPI server is running."} 
+    return {"status": "FastAPI server is running."}
+
+@app.get("/test-rates")
+def test_rates():
+    """
+    Test endpoint to check if the rate API is working with a simple request
+    """
+    if not BEARER_TOKEN or not SESSION_COOKIE:
+        return {"error": "Missing authentication tokens"}
+    
+    test_request = {
+        "currency": "USD",
+        "number_of_adults": 2,
+        "children_ages": [],
+        "start_date": "2025-08-14",
+        "end_date": "2025-08-22",
+        "supplier_ids": ["da935cce-1f96-46b0-af8e-036cb0d535f7"],
+        "filters": {}
+    }
+    
+    try:
+        result = get_rate_summary(test_request)
+        return {"status": "success", "data": result}
+    except Exception as e:
+        return {"status": "error", "message": str(e)} 

@@ -1,34 +1,27 @@
 'use client'
 
 import React, { useState } from 'react'
-
-interface Hotel {
-  id: string
-  name: string
-  location: string
-  hotel_class?: string
-  is_bookable?: boolean
-  labels?: Array<{text: string, slug: string}>
-  images?: Array<{public_id: string, caption?: string}>
-  programs?: Array<{name: string, id: string, logo_url: string}>
-  brand_name?: string
-  brand_group?: string
-  average_review_rating?: number
-  total_review_count?: number
-  awards?: Array<{label: string, value: number, slug: string}>
-  commission_range?: string
-  payout_speed?: string
-  last_year_booking_count?: number
-  all_time_booking_count?: number
-  gmaps_link?: string
-  coordinates?: {latitude: number, longitude: number}
-}
+import { Hotel } from './types/hotel'
+import { ApiService } from './services/api'
+import HotelCard from './components/HotelCard'
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState('')
   const [hotels, setHotels] = useState<Hotel[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  
+  // Search filters state
+  const [filters, setFilters] = useState({
+    adults: 2,
+    children_ages: [] as number[],
+    currency: 'USD',
+    start_date: '2025-08-14',
+    end_date: '2025-08-22',
+    rooms: 1,
+    view_mode: 'list',
+    supplierType: 'hotels'
+  })
 
   const searchHotels = async () => {
     if (!searchQuery.trim()) return
@@ -37,39 +30,56 @@ export default function Home() {
     setError('')
 
     try {
-      const response = await fetch(`http://localhost:8000/api/search?query=${encodeURIComponent(searchQuery)}`)
+      // Search for hotels
+      const hotels = await ApiService.searchHotels(searchQuery)
       
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.detail || 'Failed to search hotels')
+      // Get rates for the hotels (in batches of 10 due to API limit)
+      if (hotels.length > 0) {
+        const hotelIds = hotels.map(hotel => hotel.id)
+        const batchSize = 10
+        const rateBatches = []
+        
+        for (let i = 0; i < hotelIds.length; i += batchSize) {
+          const batch = hotelIds.slice(i, i + batchSize)
+          rateBatches.push(batch)
+        }
+        
+        let allRates: any[] = []
+        
+        for (const batch of rateBatches) {
+          const rateRequest = {
+            currency: filters.currency,
+            number_of_adults: filters.adults,
+            children_ages: filters.children_ages,
+            start_date: filters.start_date,
+            end_date: filters.end_date,
+            supplier_ids: batch,
+            filters: {}
+          }
+
+          try {
+            const rateResponse = await ApiService.getRateSummary(rateRequest)
+            if (rateResponse.data) {
+              allRates.push(...rateResponse.data)
+            }
+          } catch (rateError) {
+            console.warn('Failed to fetch rates for batch:', rateError)
+          }
+        }
+        
+        // Merge rates with hotels
+        const hotelsWithRates = hotels.map(hotel => {
+          const rate = allRates.find(r => r.id === hotel.id)
+          return {
+            ...hotel,
+            rate: rate || undefined
+          }
+        })
+        
+        setHotels(hotelsWithRates)
+      } else {
+        setHotels([])
       }
-
-      const data = await response.json()
-      
-      // Transform the API response to match our Hotel interface
-      const transformedHotels = data.results?.map((hotel: any) => ({
-        id: hotel.id,
-        name: hotel.name,
-        location: hotel.location,
-        hotel_class: hotel.hotel_class,
-        is_bookable: hotel.is_bookable,
-        labels: hotel.labels,
-        images: hotel.images,
-        programs: hotel.programs,
-        brand_name: hotel.brand_name,
-        brand_group: hotel.brand_group,
-        average_review_rating: hotel.average_review_rating,
-        total_review_count: hotel.total_review_count,
-        awards: hotel.awards,
-        commission_range: hotel.commission_range,
-        payout_speed: hotel.payout_speed,
-        last_year_booking_count: hotel.last_year_booking_count,
-        all_time_booking_count: hotel.all_time_booking_count,
-        gmaps_link: hotel.gmaps_link,
-        coordinates: hotel.coordinates
-      })) || []
-
-      setHotels(transformedHotels)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
       setHotels([])
@@ -113,24 +123,130 @@ export default function Home() {
             Discover amazing hotels and destinations around the world
           </p>
           
-          {/* Search Bar */}
-          <div className="max-w-2xl mx-auto">
-            <div className="flex shadow-lg rounded-lg overflow-hidden">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Search for hotels, destinations, or cities..."
-                className="flex-1 px-6 py-4 text-lg border-0 focus:outline-none focus:ring-0"
-              />
-              <button
-                onClick={searchHotels}
-                disabled={loading}
-                className="bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 text-white px-8 py-4 font-semibold transition-colors duration-200"
-              >
-                {loading ? 'Searching...' : 'Search'}
-              </button>
+          {/* Search Interface */}
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {/* Where */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Where</label>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Destination or hotel name"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+                
+                {/* When */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">When</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="date"
+                      value={filters.start_date}
+                      onChange={(e) => setFilters({...filters, start_date: e.target.value})}
+                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                    <input
+                      type="date"
+                      value={filters.end_date}
+                      onChange={(e) => setFilters({...filters, end_date: e.target.value})}
+                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                </div>
+                
+                {/* Who */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Who</label>
+                  <div className="flex gap-2">
+                    <select
+                      value={filters.adults}
+                      onChange={(e) => setFilters({...filters, adults: parseInt(e.target.value)})}
+                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                      {[1,2,3,4,5,6,7,8,9,10].map(num => (
+                        <option key={num} value={num}>{num} {num === 1 ? 'adult' : 'adults'}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={filters.rooms}
+                      onChange={(e) => setFilters({...filters, rooms: parseInt(e.target.value)})}
+                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                      {[1,2,3,4,5].map(num => (
+                        <option key={num} value={num}>{num} {num === 1 ? 'room' : 'rooms'}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                
+                {/* Search Button */}
+                <div className="flex items-end">
+                  <button
+                    onClick={searchHotels}
+                    disabled={loading}
+                    className="w-full bg-black hover:bg-gray-800 disabled:bg-gray-400 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200 flex items-center justify-center"
+                  >
+                    {loading ? (
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    )}
+                    {loading ? 'Searching...' : 'Search'}
+                  </button>
+                </div>
+              </div>
+              
+              {/* Currency and View Options */}
+              <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-200">
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-2 text-sm text-gray-600">
+                    <span>Currency:</span>
+                    <select
+                      value={filters.currency}
+                      onChange={(e) => setFilters({...filters, currency: e.target.value})}
+                      className="px-3 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                      <option value="USD">USD ($)</option>
+                      <option value="EUR">EUR (€)</option>
+                      <option value="GBP">GBP (£)</option>
+                    </select>
+                  </label>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">View:</span>
+                  <button
+                    onClick={() => setFilters({...filters, view_mode: 'list'})}
+                    className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                      filters.view_mode === 'list' 
+                        ? 'bg-primary-600 text-white' 
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    List
+                  </button>
+                  <button
+                    onClick={() => setFilters({...filters, view_mode: 'map'})}
+                    className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                      filters.view_mode === 'map' 
+                        ? 'bg-primary-600 text-white' 
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    Map
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -153,162 +269,7 @@ export default function Home() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {hotels.map((hotel) => (
-                <div key={hotel.id} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-                  {/* Hotel Image */}
-                  {hotel.images && hotel.images.length > 0 && (
-                    <div className="relative h-48 bg-gray-200">
-                      <img
-                        src={`https://media.fora.travel/foratravelportal/image/upload/c_fill,w_400,h_300,g_auto/f_auto/q_auto/v1/${hotel.images[0].public_id}`}
-                        alt={hotel.name}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none'
-                        }}
-                      />
-                      {/* Hotel Class Badge */}
-                      {hotel.hotel_class && (
-                        <div className="absolute top-3 left-3 bg-black bg-opacity-75 text-white px-2 py-1 rounded text-sm font-semibold">
-                          {hotel.hotel_class}★
-                        </div>
-                      )}
-                      {/* Labels */}
-                      {hotel.labels && hotel.labels.length > 0 && (
-                        <div className="absolute top-3 right-3 flex flex-col gap-1">
-                          {hotel.labels.slice(0, 2).map((label, index) => (
-                            <span
-                              key={index}
-                              className={`px-2 py-1 rounded text-xs font-medium ${
-                                label.slug === 'reserve' 
-                                  ? 'bg-blue-600 text-white' 
-                                  : 'bg-green-600 text-white'
-                              }`}
-                            >
-                              {label.text}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  
-                  <div className="p-6">
-                    {/* Hotel Name and Brand */}
-                    <div className="mb-3">
-                      <h4 className="text-xl font-bold text-gray-900 mb-1">
-                        {hotel.name}
-                      </h4>
-                      {hotel.brand_name && (
-                        <p className="text-sm text-gray-500 font-medium">
-                          {hotel.brand_name}
-                        </p>
-                      )}
-                    </div>
-                    
-                    {/* Location */}
-                    <p className="text-gray-600 mb-3 flex items-center">
-                      <svg className="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                      {hotel.location}
-                    </p>
-                    
-                    {/* Rating */}
-                    {hotel.average_review_rating && (
-                      <div className="flex items-center mb-3">
-                        <div className="flex text-yellow-400">
-                          {[...Array(5)].map((_, i) => (
-                            <svg
-                              key={i}
-                              className={`w-4 h-4 ${i < Math.round(hotel.average_review_rating!) ? 'fill-current' : 'fill-gray-300'}`}
-                              viewBox="0 0 20 20"
-                            >
-                              <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                            </svg>
-                          ))}
-                        </div>
-                        <span className="ml-2 text-sm text-gray-600">
-                          {hotel.average_review_rating.toFixed(1)} ({hotel.total_review_count} reviews)
-                        </span>
-                      </div>
-                    )}
-                    
-                    {/* Awards */}
-                    {hotel.awards && hotel.awards.length > 0 && (
-                      <div className="mb-3">
-                        {hotel.awards.map((award, index) => (
-                          <span
-                            key={index}
-                            className="inline-block bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full mr-2 mb-1"
-                          >
-                            {award.label}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                    
-                    {/* Programs */}
-                    {hotel.programs && hotel.programs.length > 0 && (
-                      <div className="mb-3">
-                        <div className="flex flex-wrap gap-1">
-                          {hotel.programs.slice(0, 3).map((program, index) => (
-                            <img
-                              key={index}
-                              src={program.logo_url}
-                              alt={program.name}
-                              className="h-6 w-auto object-contain"
-                              onError={(e) => {
-                                e.currentTarget.style.display = 'none'
-                              }}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Stats */}
-                    <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
-                      {hotel.commission_range && (
-                        <div className="text-gray-600">
-                          <span className="font-medium">Commission:</span> {hotel.commission_range}
-                        </div>
-                      )}
-                      {hotel.payout_speed && (
-                        <div className="text-gray-600">
-                          <span className="font-medium">Payout:</span> {hotel.payout_speed}
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Booking Stats */}
-                    {hotel.last_year_booking_count && (
-                      <div className="text-xs text-gray-500 mb-4">
-                        {hotel.last_year_booking_count} bookings last year
-                      </div>
-                    )}
-                    
-                    {/* Action Buttons */}
-                    <div className="flex gap-2">
-                      {hotel.is_bookable && (
-                        <button className="flex-1 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200">
-                          Book Now
-                        </button>
-                      )}
-                      {hotel.gmaps_link && (
-                        <a
-                          href={hotel.gmaps_link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
-                        >
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-                          </svg>
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                <HotelCard key={hotel.id} hotel={hotel} />
               ))}
             </div>
           </div>
