@@ -177,46 +177,74 @@ async def get_rates(request: Request):
 
 @app.get('/api/hotel-details/{hotel_id}')
 def get_hotel_details(hotel_id: str = Path(...)):
-    if not BEARER_TOKEN or not SESSION_COOKIE:
-        raise HTTPException(status_code=500, detail="Server is missing authentication tokens. Check your .env file.")
-    url = f'https://api.fora.travel/v1/supplier-database/suppliers/{hotel_id}'
-    cookies = {
-        '__Secure-next-auth.session-token': SESSION_COOKIE,
-    }
-    headers = {
-        'Authorization': f'Bearer {BEARER_TOKEN}',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'application/json',
-        'Referer': 'https://advisor.fora.travel/partners/hotels'
-    }
     try:
+        # Get authentication headers with automatic token refresh
+        headers = auth_service.get_auth_headers()
+        cookies = auth_service.get_session_cookies()
+        
+        url = f'https://api.fora.travel/v1/supplier-database/suppliers/{hotel_id}'
+        
+        print(f"Making hotel details request to: {url}")
+        print(f"Using auth headers: {headers}")
+        
         response = requests.get(url, headers=headers, cookies=cookies, timeout=20)
         response.raise_for_status()
         print(f"/api/hotel-details/{hotel_id} result: {response.text}")
         return response.json()
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code in [401, 403]:
+            # Try to refresh token and retry once
+            try:
+                print("Authentication failed, attempting token refresh...")
+                headers = auth_service.get_auth_headers(force_refresh=True)
+                response = requests.get(url, headers=headers, cookies=cookies, timeout=20)
+                response.raise_for_status()
+                return response.json()
+            except Exception as refresh_error:
+                print(f"Token refresh failed: {refresh_error}")
+                raise HTTPException(status_code=401, detail="Authentication failed. Please check your session cookie.")
+        else:
+            raise HTTPException(status_code=e.response.status_code, detail=f"API request failed: {e.response.reason}")
     except requests.exceptions.RequestException as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch hotel details: {e}")
+    except Exception as e:
+        print(f"Unexpected error in get_hotel_details: {e}")
+        raise HTTPException(status_code=500, detail="An internal server error occurred.")
 
 @app.get('/api/filtered-hotels')
 def get_filtered_hotels(view_mode: str, adults: int, dates: str, rooms: int, q: str, currency: str):
-    if not BEARER_TOKEN or not SESSION_COOKIE:
-        raise HTTPException(status_code=500, detail="Server is missing authentication tokens. Check your .env file.")
-    url = f'https://advisor.fora.travel/partners/hotels?view_mode={view_mode}&adults={adults}&dates={dates}&rooms={rooms}&q={q}&currency={currency}'
-    cookies = {
-        '__Secure-next-auth.session-token': SESSION_COOKIE,
-    }
-    headers = {
-        'Authorization': f'Bearer {BEARER_TOKEN}',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'application/json',
-        'Referer': 'https://advisor.fora.travel/partners/hotels'
-    }
     try:
+        # Get authentication headers with automatic token refresh
+        headers = auth_service.get_auth_headers()
+        cookies = auth_service.get_session_cookies()
+        
+        url = f'https://advisor.fora.travel/partners/hotels?view_mode={view_mode}&adults={adults}&dates={dates}&rooms={rooms}&q={q}&currency={currency}'
+        
+        print(f"Making filtered hotels request to: {url}")
+        print(f"Using auth headers: {headers}")
+        
         response = requests.get(url, headers=headers, cookies=cookies, timeout=20)
         response.raise_for_status()
         return response.json()
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code in [401, 403]:
+            # Try to refresh token and retry once
+            try:
+                print("Authentication failed, attempting token refresh...")
+                headers = auth_service.get_auth_headers(force_refresh=True)
+                response = requests.get(url, headers=headers, cookies=cookies, timeout=20)
+                response.raise_for_status()
+                return response.json()
+            except Exception as refresh_error:
+                print(f"Token refresh failed: {refresh_error}")
+                raise HTTPException(status_code=401, detail="Authentication failed. Please check your session cookie.")
+        else:
+            raise HTTPException(status_code=e.response.status_code, detail=f"API request failed: {e.response.reason}")
     except requests.exceptions.RequestException as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch filtered hotels: {e}")
+    except Exception as e:
+        print(f"Unexpected error in get_filtered_hotels: {e}")
+        raise HTTPException(status_code=500, detail="An internal server error occurred.")
 
 @app.get("/")
 def read_root():

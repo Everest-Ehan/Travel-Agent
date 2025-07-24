@@ -7,9 +7,11 @@ import { ApiService } from '../services/api'
 interface HotelCardProps {
   hotel: Hotel
   loadingRate?: boolean
+  filters?: any
+  onClick?: () => void
 }
 
-export default function HotelCard({ hotel, loadingRate = false }: HotelCardProps) {
+export default function HotelCard({ hotel, loadingRate = false, filters, onClick }: HotelCardProps) {
   const formatRate = (rate?: number, currency: string = 'USD') => {
     if (!rate) return null
     return new Intl.NumberFormat('en-US', {
@@ -41,42 +43,13 @@ export default function HotelCard({ hotel, loadingRate = false }: HotelCardProps
     return `${rate.lowest_commission}-${rate.highest_commission}%`
   }
 
-  // Handler for card click
-  const handleCardClick = async () => {
-    console.log(`Hotel card clicked: ${hotel.name} (ID: ${hotel.id})`);
-    console.log('Sending request for hotel details...');
-    // Fetch hotel details
-    try {
-      const details = await ApiService.fetchHotelDetails(hotel.id);
-      console.log('Hotel details received:', details);
-    } catch (err) {
-      console.error('Error in hotel details request:', err);
-    }
-    // Prepare correct filter params for filtered hotels
-    const filterParams = {
-      view_mode: filters?.view_mode || 'list',
-      adults: filters?.adults || 2,
-      dates: `${filters?.start_date || '2025-08-11'}-${filters?.end_date || '2025-08-16'}`,
-      rooms: filters?.rooms || 1,
-      q: hotel.name,
-      currency: filters?.currency || 'USD',
-    };
-    console.log('Sending request for filtered hotels with params:', filterParams);
-    try {
-      const filtered = await ApiService.fetchFilteredHotels(filterParams);
-      console.log('Filtered hotels API response:', filtered);
-    } catch (err) {
-      console.error('Error in filtered hotels request:', err);
-    }
-  }
+
 
   return (
-
     <div className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border border-gray-100" onClick={onClick} style={{ cursor: 'pointer' }}>
       {/* Hotel Image */}
       {hotel.images && hotel.images.length > 0 && (
         <div className="relative h-56 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
-
           <img
             src={`https://media.fora.travel/foratravelportal/image/upload/c_fill,w_400,h_300,g_auto/f_auto/q_auto/v1/${hotel.images[0].public_id}`}
             alt={hotel.name}
@@ -85,33 +58,33 @@ export default function HotelCard({ hotel, loadingRate = false }: HotelCardProps
               e.currentTarget.style.display = 'none'
             }}
           />
-        )}
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
-        
-        {/* Top Badges */}
-        <div className="absolute top-3 left-3 flex flex-col gap-2">
-          {hotel.hotel_class && (
-            <div className="bg-white/95 backdrop-blur-sm text-gray-900 px-2.5 py-1 rounded-full text-sm font-bold shadow-lg">
-              {hotel.hotel_class}★
-            </div>
-          )}
-          {hotel.labels && hotel.labels.length > 0 && (
-            hotel.labels.slice(0, 1).map((label, index) => (
-              <span
-                key={index}
-                className={`px-2.5 py-1 rounded-full text-xs font-semibold shadow-lg backdrop-blur-sm ${
-                  label.slug === 'reserve' 
-                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' 
-                    : 'bg-gradient-to-r from-green-500 to-green-600 text-white'
-                }`}
-              >
-                {label.text}
-              </span>
-            ))
-          )}
-
           
+          {/* Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
+        
+          {/* Top Badges */}
+          <div className="absolute top-3 left-3 flex flex-col gap-2">
+            {hotel.hotel_class && (
+              <div className="bg-white/95 backdrop-blur-sm text-gray-900 px-2.5 py-1 rounded-full text-sm font-bold shadow-lg">
+                {hotel.hotel_class}★
+              </div>
+            )}
+            {hotel.labels && hotel.labels.length > 0 && (
+              hotel.labels.slice(0, 1).map((label, index) => (
+                <span
+                  key={index}
+                  className={`px-2.5 py-1 rounded-full text-xs font-semibold shadow-lg backdrop-blur-sm ${
+                    label.slug === 'reserve' 
+                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' 
+                      : 'bg-gradient-to-r from-green-500 to-green-600 text-white'
+                  }`}
+                >
+                  {label.text}
+                </span>
+              ))
+            )}
+          </div>
+
           {/* Favorite Button */}
           <button className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-lg hover:bg-white transition-all duration-200" onClick={e => e.stopPropagation()}>
             <svg className="w-5 h-5 text-gray-600 hover:text-red-500 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -119,27 +92,19 @@ export default function HotelCard({ hotel, loadingRate = false }: HotelCardProps
             </svg>
           </button>
 
+          {/* Hotel Name Overlay */}
+          <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+            <h4 className="text-lg font-bold text-white leading-tight">
+              {hotel.name}
+            </h4>
+            {hotel.brand_name && (
+              <p className="text-sm text-gray-200 mt-1">
+                {hotel.brand_name}
+              </p>
+            )}
+          </div>
         </div>
-
-        {/* Favorite Button */}
-        <button className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm p-2 rounded-full shadow-lg hover:bg-white transition-all duration-200">
-          <svg className="w-4 h-4 text-gray-600 hover:text-red-500 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-          </svg>
-        </button>
-
-        {/* Hotel Name Overlay */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
-          <h4 className="text-lg font-bold text-white leading-tight">
-            {hotel.name}
-          </h4>
-          {hotel.brand_name && (
-            <p className="text-sm text-gray-200 mt-1">
-              {hotel.brand_name}
-            </p>
-          )}
-        </div>
-      </div>
+      )}
 
       {/* Content Section */}
       <div className="p-5">
