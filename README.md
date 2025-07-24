@@ -51,21 +51,24 @@ A full-stack hotel search application with a Next.js frontend and FastAPI backen
    pip install -r requirements.txt
    ```
 
-5. **Create a `.env` file in the backend directory:**
-   ```bash
-   # backend/.env
-   BEARER_TOKEN="your_bearer_token_here"
-   SESSION_COOKIE="your_session_cookie_here"
-   ```
+5. **Set up authentication** (choose one method):
 
-   **Important:** You need to obtain these tokens from the Fora Travel website:
-   - Log into https://advisor.fora.travel/
-   - Open browser developer tools (F12)
-   - Go to Network tab
-   - Make a search request
-   - Find the request to the API and copy:
-     - The `Authorization` header value (Bearer token)
-     - The `__Secure-next-auth.session-token` cookie value
+   **Method A: Automatic Setup (Recommended)**
+   ```bash
+   python setup_auth.py
+   ```
+   This will guide you through getting your session cookie and testing it.
+
+   **Method B: Manual Setup**
+   - Go to https://advisor.fora.travel and log in
+   - Open Developer Tools (F12) → Application/Storage → Cookies
+   - Find `__Secure-next-auth.session-token` and copy its value
+   - Create a `.env` file in the backend directory:
+     ```env
+     SESSION_COOKIE="your_session_cookie_here"
+     ```
+
+   **Note:** The bearer token is now automatically fetched from the session API, so you only need the session cookie.
 
 6. **Run the FastAPI server:**
    ```bash
@@ -118,6 +121,7 @@ A full-stack hotel search application with a Next.js frontend and FastAPI backen
 - **FastAPI Server**: High-performance Python web framework
 - **CORS Support**: Allows frontend to communicate with backend
 - **API Integration**: Connects to Fora Travel API
+- **Authentication Service**: Automatic token management and refresh
 - **Error Handling**: Comprehensive error handling and logging
 - **Environment Variables**: Secure token management
 
@@ -134,22 +138,39 @@ Search for hotels using the Fora Travel API.
 GET http://localhost:8000/api/search?query=paris
 ```
 
+### POST /api/rates
+Get rate information for hotels.
+
+**Request Body:**
+```json
+{
+  "currency": "USD",
+  "number_of_adults": 2,
+  "children_ages": [],
+  "start_date": "2025-08-14",
+  "end_date": "2025-08-22",
+  "supplier_ids": ["hotel_id_1", "hotel_id_2"],
+  "filters": {}
+}
+```
+
+### GET /auth/status
+Check authentication status and user information.
+
 **Response:**
 ```json
 {
-  "results": [
-    {
-      "id": "hotel_id",
-      "name": "Hotel Name",
-      "location": "Paris, France",
-      "rating": 4.5,
-      "price": "$200/night",
-      "image": "https://example.com/image.jpg",
-      "description": "Hotel description..."
-    }
-  ]
+  "status": "authenticated",
+  "user": {
+    "name": "User Name",
+    "email": "user@example.com"
+  },
+  "message": "Authentication successful"
 }
 ```
+
+### GET /test-rates
+Test endpoint to verify rate API functionality.
 
 ## Usage
 
