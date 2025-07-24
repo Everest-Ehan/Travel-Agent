@@ -1,0 +1,119 @@
+{
+  "results": [
+    {
+      "id": "da935cce-1f96-46b0-af8e-036cb0d535f7",
+      "is_bookable": true,
+      "name": "Ashford Castle",
+      "location": "Mayo, Ireland",
+      "hotel_class": "5",
+      "how_to_book": null,
+      "labels": [
+        {"text": "Fora Reserve", "slug": "reserve"},
+        {"text": "Preferred Partner", "slug": "partnership"}
+      ],
+      "images": [
+        {"public_id": "87cafcaa-c0f3-4d2d-81d4-14b568a9fbda", "caption": null},
+        {"public_id": "05443b59-e236-4820-8b43-58024370b65f", "caption": null},
+        {"public_id": "063ab060-3f14-4207-8691-fe605cd95e55", "caption": null},
+        {"public_id": "07c1d8f6-a8d2-4b9c-9356-e5c3fe56a31a", "caption": null},
+        {"public_id": "08cf78ce-d4e2-456c-9f07-c739a6992c36", "caption": null}
+      ],
+      "programs": [
+        {
+          "name": "Fora Reserve",
+          "id": "b34e1401-7aa8-48a4-bf30-cd5fec16defb",
+          "logo_url": "https://assets.fora.travel/suppliers_logos/jul29_refresh_Fora+Reserve.png"
+        },
+        {
+          "name": "Virtuoso",
+          "id": "ae9ce586-c659-4f07-992e-314fb091ab2c",
+          "logo_url": "https://assets.fora.travel/suppliers_logos/jul29_refresh_Virtuoso.png"
+        }
+      ],
+      "brand_name": "Red Carnation",
+      "brand_group": "Red Carnation",
+      "property_name": null,
+      "last_year_booking_count": 75,
+      "last_year_advisor_count": 37,
+      "all_time_booking_count": 117,
+      "all_time_advisor_count": 64,
+      "sequence": 12,
+      "all_inclusive": false,
+      "gmaps_link": "https://www.google.com/maps/search/?api=1&query=Ashford+Castle%20Mayo%20Ireland",
+      "neighborhood": null,
+      "awards": [],
+      "average_review_rating": 5.0,
+      "total_review_count": 16,
+      "has_property_report": true,
+      "restricted_booking_methods": false,
+      "is_in_advisor_list": false,
+      "payout_speed": "payout 10-90 days",
+      "commission_range": "10-14%",
+      "coordinates": {"latitude": 53.5348, "longitude": -9.284406}
+    },
+    {
+      "id": "a76041ab-d401-493c-9666-4a412ca9788f",
+      "is_bookable": true,
+      "name": "Hotel Jerome, Auberge Resorts Collection",
+      "location": "Aspen, Colorado, United States",
+      "hotel_class": "5",
+      "how_to_book": null,
+      "labels": [
+        {"text": "Fora Reserve", "slug": "reserve"},
+        {"text": "Preferred Partner", "slug": "partnership"}
+      ],
+      "images": [
+        {"public_id": "fca2e6ec-5523-445d-8b36-98f15fafbbbe", "caption": null},
+        {"public_id": "7a74e2f3-4b2c-41c3-bb97-435f83627fa7", "caption": null},
+        {"public_id": "b513abf5-aac1-4b16-a768-e6a26e9f19c3", "caption": null},
+        {"public_id": "bb6c312b-a8de-4eba-b6a3-1fa95b40b2ee", "caption": null},
+        {"public_id": "e3eb7f35-0c37-4f2e-b92e-124b9436550a", "caption": null}
+      ],
+      "programs": [
+        {
+          "name": "Fora Reserve",
+          "id": "b34e1401-7aa8-48a4-bf30-cd5fec16defb",
+          "logo_url": "https://assets.fora.travel/suppliers_logos/jul29_refresh_Fora+Reserve.png"
+        },
+        {
+          "name": "Virtuoso",
+          "id": "ae9ce586-c659-4f07-992e-314fb091ab2c",
+          "logo_url": "https://assets.fora.travel/suppliers_logos/jul29_refresh_Virtuoso.png"
+        },
+        {
+          "name": "UJV",
+          "id": "bec79dcd-f692-45d2-b6ba-16ca998d5830",
+          "logo_url": "https://assets.fora.travel/suppliers_logos/jul29_refresh_UJV.png"
+        }
+      ],
+      "brand_name": "Auberge",
+      "brand_group": "Auberge",
+      "property_name": null,
+      "last_year_booking_count": 82,
+      "last_year_advisor_count": 52,
+      "all_time_booking_count": 113,
+      "all_time_advisor_count": 72,
+      "sequence": 1424,
+      "all_inclusive": false,
+      "gmaps_link": "https://www.google.com/maps/search/?api=1&query=Hotel Jerome, Auberge Resorts Collection%20Aspen%20United States",
+      "neighborhood": null,
+      "awards": [
+        {
+          "label": "1 MICHELIN Key",
+          "value": 1.0,
+          "slug": "michelin_keys",
+          "supplier_id": "a76041ab-d401-493c-9666-4a412ca9788f",
+          "id": "a65d2cde-b3df-4b7c-ad3e-0f821248307b"
+        }
+      ],
+      "average_review_rating": 4.714285714285714,
+      "total_review_count": 7,
+      "has_property_report": true,
+      "restricted_booking_methods": false,
+      "is_in_advisor_list": false,
+      "payout_speed": "payout 10-90 days",
+      "commission_range": "10-15%",
+      "coordinates": {"latitude": 39.190746, "longitude": -106.81955}
+    }
+  ]
+} 
