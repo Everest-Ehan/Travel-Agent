@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
+import Alert from '../ui/Alert'
+import LoadingSpinner from '../ui/LoadingSpinner'
 
 interface PasswordResetProps {
   onBackToLogin: () => void
@@ -37,10 +39,10 @@ export default function PasswordReset({ onBackToLogin }: PasswordResetProps) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        <div>
-          <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-blue-100">
+        <div className="text-center">
+          <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-full bg-indigo-100 mb-4">
             <svg
-              className="h-6 w-6 text-blue-600"
+              className="h-8 w-8 text-indigo-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -61,52 +63,64 @@ export default function PasswordReset({ onBackToLogin }: PasswordResetProps) {
           </p>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div>
-            <label htmlFor="email-address" className="sr-only">
-              Email address
-            </label>
-            <input
-              id="email-address"
-              name="email"
-              type="email"
-              autoComplete="email"
-              required
-              className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-              placeholder="Email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            <div>
+              <label htmlFor="email-address" className="block text-sm font-medium text-gray-700 mb-1">
+                Email address
+              </label>
+              <input
+                id="email-address"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm transition-all duration-200"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
 
-          {error && (
-            <div className="text-red-600 text-sm text-center">{error}</div>
-          )}
+            {error && <Alert type="error" message={error} />}
+            {message && <Alert type="success" message={message} />}
 
-          {message && (
-            <div className="text-green-600 text-sm text-center">{message}</div>
-          )}
+            <div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
+              >
+                {loading ? (
+                  <div className="flex items-center">
+                    <LoadingSpinner size="sm" className="-ml-1 mr-3" />
+                    Sending...
+                  </div>
+                ) : (
+                  'Send reset link'
+                )}
+              </button>
+            </div>
 
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Sending...' : 'Send reset link'}
-            </button>
-          </div>
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={onBackToLogin}
+                className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors"
+              >
+                ← Back to sign in
+              </button>
+            </div>
+          </form>
+        </div>
 
-          <div className="text-center">
-            <button
-              type="button"
-              onClick={onBackToLogin}
-              className="font-medium text-indigo-600 hover:text-indigo-500"
-            >
-              Back to sign in
-            </button>
-          </div>
-        </form>
+        <div className="text-center">
+          <Alert 
+            type="info" 
+            message="Note: The reset link will expire in 1 hour for security reasons."
+            className="text-left"
+          />
+        </div>
       </div>
     </div>
   )

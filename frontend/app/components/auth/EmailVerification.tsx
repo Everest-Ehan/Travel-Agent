@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
+import Alert from '../ui/Alert'
+import LoadingSpinner from '../ui/LoadingSpinner'
 
 interface EmailVerificationProps {
   email: string
@@ -36,10 +38,10 @@ export default function EmailVerification({ email, onVerified }: EmailVerificati
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        <div>
-          <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-yellow-100">
+        <div className="text-center">
+          <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-full bg-indigo-100 mb-4">
             <svg
-              className="h-6 w-6 text-yellow-600"
+              className="h-8 w-8 text-indigo-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -53,42 +55,54 @@ export default function EmailVerification({ email, onVerified }: EmailVerificati
             </svg>
           </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Verify your email
+            Check your email
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            We've sent a verification email to
+            We've sent a verification link to
           </p>
-          <p className="text-center text-sm font-medium text-gray-900">
+          <p className="text-center text-sm font-medium text-gray-900 bg-white px-3 py-2 rounded-lg border mt-2">
             {email}
           </p>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
           <div className="text-center">
-            <p className="text-sm text-gray-600 mb-4">
-              Please check your email and click the verification link to complete your registration.
-            </p>
+            <div className="mb-6">
+              <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-green-100 mb-4">
+                <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Almost there!
+              </h3>
+              <p className="text-sm text-gray-600">
+                Click the verification link in your email to complete your registration.
+              </p>
+            </div>
 
-            {error && (
-              <div className="mb-4 text-red-600 text-sm">{error}</div>
-            )}
-
-            {message && (
-              <div className="mb-4 text-green-600 text-sm">{message}</div>
-            )}
+            {error && <Alert type="error" message={error} />}
+            {message && <Alert type="success" message={message} />}
 
             <div className="space-y-3">
               <button
                 onClick={handleResendEmail}
                 disabled={loading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
               >
-                {loading ? 'Sending...' : 'Resend verification email'}
+                {loading ? (
+                  <div className="flex items-center">
+                    <LoadingSpinner size="sm" className="-ml-1 mr-3" />
+                    Sending...
+                  </div>
+                ) : (
+                  'Resend verification email'
+                )}
               </button>
 
               <button
                 onClick={() => window.location.reload()}
-                className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                className="w-full flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
               >
                 I've verified my email
               </button>
@@ -97,16 +111,11 @@ export default function EmailVerification({ email, onVerified }: EmailVerificati
         </div>
 
         <div className="text-center">
-          <p className="text-xs text-gray-500">
-            Didn't receive the email? Check your spam folder or{' '}
-            <button
-              onClick={handleResendEmail}
-              disabled={loading}
-              className="text-indigo-600 hover:text-indigo-500 disabled:opacity-50"
-            >
-              try again
-            </button>
-          </p>
+          <Alert 
+            type="info" 
+            message="Tip: Check your spam folder if you don't see the email in your inbox."
+            className="text-left"
+          />
         </div>
       </div>
     </div>
