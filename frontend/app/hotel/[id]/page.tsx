@@ -498,16 +498,8 @@ export default function HotelDetailsPage() {
                           <a href="#" className="text-primary-600 hover:text-primary-700 text-sm font-medium">
                             See {hotel.programs[selectedProgramIndex].name} perks
                           </a>
-                          <span className="text-sm text-gray-600">
-                            {hotel.programs[selectedProgramIndex].commission} (payout {hotel.programs[selectedProgramIndex].payout_speed.replace('payout ', '')})
-                          </span>
                         </div>
-                        <div className="flex items-center gap-1 text-sm text-gray-600">
-                          <span>Onyx payer</span>
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        </div>
+
                       </div>
                     </div>
                   )}
@@ -523,21 +515,6 @@ export default function HotelDetailsPage() {
                         <option>Show rates in USD ($)</option>
                       </select>
                     </div>
-
-                    {/* Important Notice */}
-                    {hotel.programs[selectedProgramIndex] && hotel.programs[selectedProgramIndex].notice_text && (
-                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-                        <div className="flex items-start gap-3">
-                          <svg className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          <div 
-                            className="text-sm text-yellow-800 prose prose-sm max-w-none"
-                            dangerouslySetInnerHTML={{ __html: hotel.programs[selectedProgramIndex].notice_text }}
-                          />
-                        </div>
-                      </div>
-                    )}
 
                     {/* Room Options */}
                     <div className="space-y-4">
@@ -594,60 +571,10 @@ export default function HotelDetailsPage() {
                                   Non-refundable
                                 </span>
                               </div>
-                              <div className="flex items-center gap-1 text-green-600">
-                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                                </svg>
-                                <span className="text-sm font-semibold">{room.commission} commission</span>
-                              </div>
                             </div>
                           </div>
                         ))
                       })()}
-                    </div>
-                  </div>
-
-                  {/* Book Outside Portal */}
-                  <div className="p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900">Book Outside Portal</h3>
-                      <a href="#" className="text-primary-600 hover:text-primary-700 text-sm">
-                        When should I book outside Portal?
-                      </a>
-                    </div>
-
-                    {/* IATA Information */}
-                    <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                      <h4 className="font-semibold text-gray-900 mb-2">Use Fora's IATA to earn commission</h4>
-                      <p className="text-sm text-gray-600 mb-3">
-                        Input this number into the IATA field to earn commission (all other fields will not be accepted).
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-lg font-bold text-gray-900">33520476</span>
-                        <button className="p-1 hover:bg-gray-200 rounded">
-                          <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Booking Instructions */}
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="font-semibold text-gray-900 mb-2">Booking Instructions</h4>
-                                                 <div className="text-sm text-gray-700 space-y-2">
-                           <p>All {hotel.programs[selectedProgramIndex]?.name || 'Fora Reserve'} rates should be booked within Portal.</p>
-                          <p>Please contact the property's reservations team directly and mention you are a Fora advisor wishing to book Reserve rates should you wish to make a booking off Portal.</p>
-                        </div>
-                      </div>
-
-                      <div>
-                        <h4 className="font-semibold text-gray-900 mb-2">What to do after booking outside Portal</h4>
-                        <div className="text-sm text-gray-700">
-                          <p>Email your booking confirmation to <span className="font-mono text-primary-600">submit@fora.travel</span>, then complete your submission on the Bookings page in Portal.</p>
-                        </div>
-                      </div>
                     </div>
                   </div>
                 </div>
