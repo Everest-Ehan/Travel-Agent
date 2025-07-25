@@ -253,6 +253,63 @@ def get_filtered_hotels(view_mode: str, adults: int, dates: str, rooms: int, q: 
         print(f"Unexpected error in get_filtered_hotels: {e}")
         raise HTTPException(status_code=500, detail="An internal server error occurred.")
 
+@app.get('/api/hotel-rates/{hotel_id}')
+def get_hotel_rates(
+    hotel_id: str = Path(...),
+    number_of_adults: int = Query(..., description="Number of adults"),
+    rooms: int = Query(..., description="Number of rooms"),
+    currency: str = Query(..., description="Currency code"),
+    start_date: str = Query(..., description="Start date (YYYY-MM-DD)"),
+    end_date: str = Query(..., description="End date (YYYY-MM-DD)")
+):
+    """
+    API endpoint to get hotel rates for a specific hotel.
+    """
+    try:
+        # Get authentication headers with automatic token refresh
+        headers = auth_service.get_auth_headers()
+        cookies = auth_service.get_session_cookies()
+        
+        # Construct the API URL with query parameters
+        url = f'https://api.fora.travel/v1/supplier-database/suppliers/{hotel_id}/rates/'
+        params = {
+            'number_of_adults': number_of_adults,
+            'rooms': rooms,
+            'currency': currency,
+            'start_date': start_date,
+            'end_date': end_date
+        }
+        
+        print(f"Making hotel rates request to: {url}")
+        print(f"Query parameters: {params}")
+        print(f"Using auth headers: {headers}")
+        
+        response = requests.get(url, headers=headers, cookies=cookies, params=params, timeout=20)
+        response.raise_for_status()
+        
+        data = response.json()
+        print(f"/api/hotel-rates/{hotel_id} result: {json.dumps(data, indent=2)}")
+        return data
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code in [401, 403]:
+            # Try to refresh token and retry once
+            try:
+                print("Authentication failed, attempting token refresh...")
+                headers = auth_service.get_auth_headers(force_refresh=True)
+                response = requests.get(url, headers=headers, cookies=cookies, params=params, timeout=20)
+                response.raise_for_status()
+                return response.json()
+            except Exception as refresh_error:
+                print(f"Token refresh failed: {refresh_error}")
+                raise HTTPException(status_code=401, detail="Authentication failed. Please check your session cookie.")
+        else:
+            raise HTTPException(status_code=e.response.status_code, detail=f"API request failed: {e.response.reason}")
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch hotel rates: {e}")
+    except Exception as e:
+        print(f"Unexpected error in get_hotel_rates: {e}")
+        raise HTTPException(status_code=500, detail="An internal server error occurred.")
+
 @app.get("/")
 def read_root():
     return {"status": "FastAPI server is running."}

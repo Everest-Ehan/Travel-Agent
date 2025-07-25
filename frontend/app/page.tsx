@@ -159,7 +159,8 @@ export default function Home() {
     
     const hotelDetailsParams = {
       currency: filters.currency,
-      dates: `${filters.start_date}-${filters.end_date}`,
+      start_date: filters.start_date,
+      end_date: filters.end_date,
       adults: filters.adults,
       children_ages: filters.children_ages?.join(',') || '',
       rooms: filters.rooms,

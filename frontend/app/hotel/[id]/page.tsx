@@ -3,6 +3,9 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import { ApiService } from '../../services/api'
+import { HotelRatesResponse, HotelRate, HotelRateProgram } from '../../types/hotel'
+import BookingDetailsSidebar from '../../components/BookingDetailsSidebar'
+import PerksPopup from '../../components/PerksPopup'
 
 interface HotelDetails {
   id: string
@@ -121,13 +124,29 @@ export default function HotelDetailsPage() {
   const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set())
   const [showFullGallery, setShowFullGallery] = useState(false)
   const [visibleImages, setVisibleImages] = useState<Set<number>>(new Set())
+  
+  // New state for rates
+  const [hotelRates, setHotelRates] = useState<HotelRatesResponse | null>(null)
+  const [loadingRates, setLoadingRates] = useState(false)
+  const [ratesError, setRatesError] = useState<string | null>(null)
+  const [selectedRate, setSelectedRate] = useState<HotelRate | null>(null)
+  const [selectedProgram, setSelectedProgram] = useState<HotelRateProgram | null>(null)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [isPerksPopupOpen, setIsPerksPopupOpen] = useState(false)
 
   const hotelId = params.id as string
   const currency = searchParams.get('currency') || 'USD'
-  const dates = searchParams.get('dates') || ''
+  const startDate = searchParams.get('start_date') || ''
+  const endDate = searchParams.get('end_date') || ''
   const adults = searchParams.get('adults') || '2'
   const children_ages = searchParams.get('children_ages') || ''
   const rooms = searchParams.get('rooms') || '1'
+
+  // Debug: Log the date parsing
+  console.log('Date parsing debug:', { startDate, endDate })
+  
+  // Ensure we have valid dates for the API
+  const hasValidDates = startDate && endDate && startDate.length === 10 && endDate.length === 10
 
   const handleImageLoad = (index: number) => {
     setLoadedImages(prev => new Set(prev).add(index))
@@ -238,7 +257,8 @@ export default function HotelDetailsPage() {
         setLoading(true)
         const hotelDetailsParams = {
           currency,
-          dates,
+          start_date: startDate,
+          end_date: endDate,
           adults: parseInt(adults),
           children_ages: children_ages ? children_ages.split(',').map(Number) : [],
           rooms: parseInt(rooms),
@@ -253,10 +273,55 @@ export default function HotelDetailsPage() {
       }
     }
 
+    const fetchHotelRates = async () => {
+      if (!hasValidDates) return
+      
+      try {
+        setLoadingRates(true)
+        setRatesError(null)
+        
+        const ratesParams = {
+          number_of_adults: parseInt(adults),
+          rooms: parseInt(rooms),
+          currency,
+          start_date: startDate,
+          end_date: endDate
+        }
+        
+        const rates = await ApiService.fetchHotelRates(hotelId, ratesParams)
+        setHotelRates(rates)
+      } catch (err) {
+        setRatesError(err instanceof Error ? err.message : 'Failed to load hotel rates')
+      } finally {
+        setLoadingRates(false)
+      }
+    }
+
     if (hotelId) {
       fetchHotelDetails()
+      fetchHotelRates()
     }
-  }, [hotelId, currency, dates, adults, children_ages, rooms])
+  }, [hotelId, currency, adults, children_ages, rooms, startDate, endDate])
+
+  const handleRateClick = (rate: HotelRate, program: HotelRateProgram) => {
+    setSelectedRate(rate)
+    setSelectedProgram(program)
+    setIsSidebarOpen(true)
+  }
+
+  const closeSidebar = () => {
+    setIsSidebarOpen(false)
+    setSelectedRate(null)
+    setSelectedProgram(null)
+  }
+
+  const openPerksPopup = () => {
+    setIsPerksPopupOpen(true)
+  }
+
+  const closePerksPopup = () => {
+    setIsPerksPopupOpen(false)
+  }
 
   if (loading) {
     return (
@@ -307,7 +372,7 @@ export default function HotelDetailsPage() {
             </div>
             <div className="flex items-center gap-3">
               <span className="text-sm text-gray-500">
-                {dates ? `${dates} • ${adults} adults` : 'Select dates'}
+                {hasValidDates ? `${startDate} - ${endDate} • ${adults} adults` : 'Select dates'}
               </span>
             </div>
           </div>
@@ -582,26 +647,43 @@ export default function HotelDetailsPage() {
                   {/* Date and Guest Selector */}
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-4 text-sm text-gray-600">
-                      <span>{dates ? `${dates.split('-')[0]} - ${dates.split('-')[1]} (8 nights)` : 'Select dates'}</span>
+                      <span>{hasValidDates ? `${startDate} - ${endDate}` : 'Select dates'}</span>
                       <span>{adults} adults, {rooms} room</span>
                     </div>
-                    <button className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
-                      Find rates
-                    </button>
+                    {loadingRates && (
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Loading rates...
+                      </div>
+                    )}
                   </div>
 
                   {/* Rate Program Tabs */}
                   {(() => {
+                    // Use real rates data if available, otherwise fall back to hotel programs
+                    const programsToShow = hotelRates?.programs || hotel.programs;
+                    
+                    if (!programsToShow || programsToShow.length === 0) {
+                      return (
+                        <div className="text-center py-8 text-gray-500">
+                          {ratesError ? `Error loading rates: ${ratesError}` : 'No rates available'}
+                        </div>
+                      );
+                    }
+
                     // Find the index of Virtuoso in the programs array
-                    const virtuosoIndex = hotel.programs.findIndex(
+                    const virtuosoIndex = programsToShow.findIndex(
                       (program) => program.name === 'Virtuoso'
                     );
                     // If Virtuoso is present, show all programs up to and including Virtuoso
                     // If not, show only the first program
                     const displayPrograms =
                       virtuosoIndex !== -1
-                        ? hotel.programs.slice(0, virtuosoIndex + 1)
-                        : hotel.programs.slice(0, 1);
+                        ? programsToShow.slice(0, virtuosoIndex + 1)
+                        : programsToShow.slice(0, 1);
 
                     return (
                       <div className="flex gap-2 overflow-x-auto pb-2">
@@ -609,12 +691,14 @@ export default function HotelDetailsPage() {
                           // The index here is relative to displayPrograms, so we need to map it to the original index for selection
                           const originalIndex =
                             virtuosoIndex !== -1 ? index : 0;
+                          
+                          // Get the lowest rate for this program
+                          const lowestRate = hotelRates?.programs?.[originalIndex]?.rates?.[0]?.price?.avg_per_night?.total;
+                          
                           return (
                             <div
                               key={program.id}
-                              onClick={() => setSelectedProgramIndex(
-                                virtuosoIndex !== -1 ? index : 0
-                              )}
+                              onClick={() => setSelectedProgramIndex(originalIndex)}
                               className={`flex-shrink-0 flex flex-col items-center p-4 rounded-lg border-2 cursor-pointer transition-all ${
                                 originalIndex === selectedProgramIndex
                                   ? 'border-primary-500 bg-primary-50'
@@ -644,15 +728,7 @@ export default function HotelDetailsPage() {
                                 <div className={`text-sm font-bold ${
                                   originalIndex === selectedProgramIndex ? 'text-primary-700' : 'text-gray-900'
                                 }`}>
-                                  ${(() => {
-                                    // Use different base rates for each program type based on commission
-                                    const baseRate = 1200 // Base rate
-                                    const commissionPercent = parseInt(program.commission.replace('%', ''))
-                                    // Higher commission programs typically have higher rates
-                                    const rateMultiplier = commissionPercent / 10
-                                    const calculatedRate = Math.round(baseRate * rateMultiplier)
-                                    return calculatedRate.toLocaleString()
-                                  })()}
+                                  {lowestRate ? `$${lowestRate.toLocaleString()}` : 'N/A'}
                                 </div>
                                 <div className="flex items-center gap-1 mt-1">
                                   <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
@@ -670,89 +746,123 @@ export default function HotelDetailsPage() {
                   })()}
 
                   {/* Selected Program Details */}
-                  {hotel.programs[selectedProgramIndex] && (
-                    <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <a href="#" className="text-primary-600 hover:text-primary-700 text-sm font-medium">
-                            See {(hotel.programs[selectedProgramIndex].name === 'Fora Reserve' ? 'Reserve' : hotel.programs[selectedProgramIndex].name)} perks
-                          </a>
+                  {(() => {
+                    const programsToShow = hotelRates?.programs || hotel.programs;
+                    const selectedProgram = programsToShow?.[selectedProgramIndex];
+                    
+                    if (!selectedProgram) return null;
+                    
+                    // Check if this is a HotelRateProgram (has rates) or regular program
+                    const ratesCount = 'rates' in selectedProgram ? selectedProgram.rates?.length || 0 : 0;
+                    
+                    return (
+                      <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            {selectedProgram.typical_perks && (
+                              <button 
+                                onClick={openPerksPopup}
+                                className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+                              >
+                                See {(selectedProgram.name === 'Fora Reserve' ? 'Reserve' : selectedProgram.name)} perks
+                              </button>
+                            )}
+                          </div>
                         </div>
-
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
                 </div>
 
                 {/* Main Content Area */}
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Book In Portal (3 results)</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {(() => {
+                        const programsToShow = hotelRates?.programs || hotel.programs;
+                        const selectedProgram = programsToShow?.[selectedProgramIndex];
+                        const ratesCount = 'rates' in selectedProgram ? selectedProgram.rates?.length || 0 : 0;
+                        return `Available Rates (${ratesCount} results)`;
+                      })()}
+                    </h3>
                     <select className="text-sm border border-gray-300 rounded-lg px-3 py-1">
-                      <option>Show rates in USD ($)</option>
+                      <option>Show rates in {currency} ({currency})</option>
                     </select>
                   </div>
 
                   {/* Room Options */}
                   <div className="space-y-4">
                     {(() => {
-                      const selectedProgram = hotel.programs[selectedProgramIndex]
-                      const baseRate = 1200
-                      const commissionPercent = parseInt(selectedProgram?.commission.replace('%', '') || '10')
-                      const rateMultiplier = commissionPercent / 10
+                      const programsToShow = hotelRates?.programs || hotel.programs;
+                      const selectedProgram = programsToShow?.[selectedProgramIndex];
                       
-                      // Generate dynamic room options based on selected program
-                      const roomTypes = [
-                        {
-                          name: "Deluxe King - floor-to-ceiling windows, antique artwork, oversized bath, double marble vanity",
-                          avgRate: Math.round(baseRate * rateMultiplier * 1.2),
-                          totalRate: Math.round(baseRate * rateMultiplier * 1.2 * 8 * 1.15), // 8 nights + 15% taxes
-                          commission: selectedProgram?.commission || "10%"
-                        },
-                        {
-                          name: "Junior Suite Double - mountain views, floor-to-ceiling windows, idyllic decor, oversized tub, double vanity",
-                          avgRate: Math.round(baseRate * rateMultiplier * 1.6),
-                          totalRate: Math.round(baseRate * rateMultiplier * 1.6 * 8 * 1.15),
-                          commission: selectedProgram?.commission || "10%"
-                        },
-                        {
-                          name: "Executive Suite - living room, elegant decor, dining table, wet bar, oversized tub, double vanity",
-                          avgRate: Math.round(baseRate * rateMultiplier * 2.1),
-                          totalRate: Math.round(baseRate * rateMultiplier * 2.1 * 8 * 1.15),
-                          commission: selectedProgram?.commission || "10%"
+                      if (!selectedProgram || !('rates' in selectedProgram) || !selectedProgram.rates) {
+                        return (
+                          <div className="text-center py-8 text-gray-500">
+                            {loadingRates ? 'Loading rates...' : 'No rates available for this program'}
+                          </div>
+                        );
+                      }
+                      
+                      return selectedProgram.rates.map((rate, index) => {
+                        const formatCurrency = (amount: number, currency: string) => {
+                          return new Intl.NumberFormat('en-US', {
+                            style: 'currency',
+                            currency: currency,
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 0,
+                          }).format(amount)
                         }
-                      ]
-                      
-                      return roomTypes.map((room, index) => (
-                        <div key={index} className="border border-gray-200 rounded-lg p-4">
-                          <h4 className="font-semibold text-gray-900 mb-3 text-sm">{room.name}</h4>
-                          <div className="flex items-center justify-between mb-3">
-                            <div>
-                              <div className="text-sm text-gray-600">Average per night</div>
-                              <div className="text-lg font-bold text-gray-900">${room.avgRate.toLocaleString()}</div>
+                        
+                        const totalPrice = rate.price.grand_total_items.find(item => item.category === 'grand_total')?.total || 0;
+                        const isRefundable = rate.policies.cancellations.some(policy => policy.refundable);
+                        
+                        return (
+                          <div 
+                            key={rate.id} 
+                            className="border border-gray-200 rounded-lg p-4 hover:border-primary-300 hover:shadow-md transition-all cursor-pointer"
+                            onClick={() => handleRateClick(rate, selectedProgram)}
+                          >
+                            <h4 className="font-semibold text-gray-900 mb-3 text-sm">{rate.room.description}</h4>
+                            <div className="flex items-center justify-between mb-3">
+                              <div>
+                                <div className="text-sm text-gray-600">Average per night</div>
+                                <div className="text-lg font-bold text-gray-900">
+                                  {formatCurrency(rate.price.avg_per_night.total, rate.price.avg_per_night.currency)}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-sm text-gray-600">Total including taxes & fees</div>
+                                <div className="text-lg font-bold text-gray-900">
+                                  {formatCurrency(totalPrice, rate.price.avg_per_night.currency)}
+                                </div>
+                              </div>
                             </div>
-                            <div className="text-right">
-                              <div className="text-sm text-gray-600">Total including taxes & fees</div>
-                              <div className="text-lg font-bold text-gray-900">${room.totalRate.toLocaleString()}</div>
+                            <div className="flex items-center justify-between">
+                              <div className="flex gap-2">
+                                <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">
+                                  {(selectedProgram.name === 'Fora Reserve' || !selectedProgram.name)
+                                    ? 'Reserve'
+                                    : selectedProgram.name}
+                                </span>
+                                <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded">
+                                  {rate.price.payment_type_slug}
+                                </span>
+                                <span className={`px-2 py-1 text-xs font-medium rounded ${
+                                  isRefundable 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : 'bg-red-100 text-red-800'
+                                }`}>
+                                  {isRefundable ? 'Refundable' : 'Non-refundable'}
+                                </span>
+                              </div>
+                              <div className="text-sm text-gray-600">
+                                Commission: {rate.commission.expected_commission_percent}%
+                              </div>
                             </div>
                           </div>
-                          <div className="flex items-center justify-between">
-                            <div className="flex gap-2">
-                              <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">
-                                {(hotel.programs[selectedProgramIndex]?.name === 'Fora Reserve' || !hotel.programs[selectedProgramIndex]?.name)
-                                  ? 'Reserve'
-                                  : hotel.programs[selectedProgramIndex]?.name}
-                              </span>
-                              <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded">
-                                Deposit Required
-                              </span>
-                              <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded">
-                                Non-refundable
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      ))
+                        )
+                      })
                     })()}
                   </div>
                 </div>
@@ -829,6 +939,31 @@ export default function HotelDetailsPage() {
           </div>
         </div>
       </main>
+
+      {/* Booking Details Sidebar */}
+      <BookingDetailsSidebar
+        isOpen={isSidebarOpen}
+        onClose={closeSidebar}
+        selectedRate={selectedRate}
+        program={selectedProgram}
+        hotelName={hotel?.name || ''}
+        startDate={startDate}
+        endDate={endDate}
+        adults={adults}
+        rooms={rooms}
+      />
+
+      {/* Perks Popup */}
+      <PerksPopup
+        isOpen={isPerksPopupOpen}
+        onClose={closePerksPopup}
+        program={(() => {
+          const programsToShow = hotelRates?.programs || hotel.programs;
+          const selectedProgram = programsToShow?.[selectedProgramIndex];
+          // Only pass if it's a HotelRateProgram (has rates property)
+          return 'rates' in selectedProgram ? selectedProgram : null;
+        })()}
+      />
     </div>
   )
 } 

@@ -1,4 +1,4 @@
-import { Hotel, RateSummaryRequest, RateSummaryResponse } from '../types/hotel'
+import { Hotel, RateSummaryRequest, RateSummaryResponse, HotelRatesResponse } from '../types/hotel'
 
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
@@ -138,6 +138,42 @@ export class ApiService {
       return data;
     } catch (error) {
       console.error('Error fetching filtered hotels:', error);
+      throw error;
+    }
+  }
+
+  // Fetch hotel rates for a specific hotel
+  static async fetchHotelRates(
+    hotelId: string, 
+    params: {
+      number_of_adults: number
+      rooms: number
+      currency: string
+      start_date: string
+      end_date: string
+    }
+  ): Promise<HotelRatesResponse> {
+    const query = new URLSearchParams(params as any).toString();
+    const url = `${API_BASE_URL}/api/hotel-rates/${hotelId}?${query}`;
+    
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'ngrok-skip-browser-warning': 'true',
+        },
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error fetching hotel rates:', errorData);
+        throw new Error(errorData.detail || 'Failed to fetch hotel rates');
+      }
+      
+      const data = await response.json();
+      console.log('Hotel rates response:', data);
+      return data;
+    } catch (error) {
+      console.error('Error fetching hotel rates:', error);
       throw error;
     }
   }

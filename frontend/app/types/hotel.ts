@@ -66,4 +66,95 @@ export interface SearchFilters {
 
 export interface RateSummaryResponse {
   data: RateInfo[]
+}
+
+export interface HotelRatesResponse {
+  summary: {
+    nightly_rate: number
+    total: number
+    currency: string
+    lowest_commission: number
+    highest_commission: number
+    is_commissionable: boolean
+    payout_speed: string
+  }
+  programs: HotelRateProgram[]
+}
+
+export interface HotelRateProgram {
+  id: string
+  logo_url: string
+  name: string
+  commission: string
+  how_to_book: string
+  typical_perks: string
+  url_partner: string
+  has_perks: boolean
+  special_perks: boolean
+  booking_method: boolean
+  list_rates: boolean
+  notice_text: string
+  show_book_outside_portal: boolean
+  show_iata: boolean
+  show_submission_instructions: boolean
+  submission_instructions: string
+  member_rate_allowed: boolean
+  member_rate_required: boolean
+  sequence: number
+  rates: HotelRate[]
+}
+
+export interface HotelRate {
+  id: string
+  offer_id: string
+  booking_code: string
+  commission: {
+    expected_commission_percent: number
+    is_commissionable: boolean
+  }
+  room: {
+    description: string
+    included_meals: {
+      breakfast: boolean
+    }
+    amenities: any[]
+    characteristics: Record<string, any>
+  }
+  policies: {
+    cancellations: CancellationPolicy[]
+  }
+  price: {
+    exchange_rate: any[]
+    rate_id: string
+    rate_code: string
+    rate_description: string
+    payment_type: string
+    payment_type_slug: string
+    avg_per_night: PriceItem
+    line_items: PriceItem[]
+    grand_total_items: PriceItem[]
+    strikethrough_price: any
+  }
+  tags: any[]
+  rate_identifier: string
+  commission_overwrite_id: string
+}
+
+export interface CancellationPolicy {
+  valid_from: string
+  valid_until: string | null
+  penalty_amount: number | null
+  penalty_percentage: number | null
+  refundable: boolean
+  penalty_currency: string
+}
+
+export interface PriceItem {
+  category: string
+  label: string
+  currency: string
+  date: string | null
+  total: number
+  original_currency: string
+  original_total: number
 } 
