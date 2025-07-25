@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Hotel } from '../types/hotel'
 import { ApiService } from '../services/api'
 
@@ -13,6 +13,29 @@ interface HotelCardProps {
 }
 
 export default function HotelCard({ hotel, loadingRate = false, loadingCard = false, filters, onClick }: HotelCardProps) {
+  const [imageLoaded, setImageLoaded] = useState(false)
+  const [imageInView, setImageInView] = useState(false)
+  const imageRef = useRef<HTMLDivElement>(null)
+
+  // Intersection Observer for lazy loading
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setImageInView(true)
+          observer.disconnect()
+        }
+      },
+      { threshold: 0.1 }
+    )
+
+    if (imageRef.current) {
+      observer.observe(imageRef.current)
+    }
+
+    return () => observer.disconnect()
+  }, [])
+
   const formatRate = (rate?: number, currency: string = 'USD') => {
     if (!rate) return null
     return new Intl.NumberFormat('en-US', {
@@ -62,15 +85,23 @@ export default function HotelCard({ hotel, loadingRate = false, loadingCard = fa
       )}
       {/* Hotel Image */}
       {hotel.images && hotel.images.length > 0 && (
-        <div className="relative h-56 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
-          <img
-            src={`https://media.fora.travel/foratravelportal/image/upload/c_fill,w_400,h_300,g_auto/f_auto/q_auto/v1/${hotel.images[0].public_id}`}
-            alt={hotel.name}
-            className="w-full h-full object-cover transition-transform duration-700 hover:scale-110"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none'
-            }}
-          />
+        <div className="relative h-56 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden" ref={imageRef}>
+          {imageInView ? (
+            <img
+              src={`https://media.fora.travel/foratravelportal/image/upload/c_fill,w_400,h_300,g_auto/f_auto/q_auto/v1/${hotel.images[0].public_id}`}
+              alt={hotel.name}
+              className={`w-full h-full object-cover transition-transform duration-700 hover:scale-110 transition-opacity duration-300 ${
+                imageLoaded ? 'opacity-100' : 'opacity-0'
+              }`}
+              onLoad={() => setImageLoaded(true)}
+              onError={(e) => {
+                e.currentTarget.style.display = 'none'
+                setImageLoaded(true)
+              }}
+            />
+          ) : (
+            <div className="w-full h-full animate-pulse bg-gray-300"></div>
+          )}
           
           {/* Gradient Overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>

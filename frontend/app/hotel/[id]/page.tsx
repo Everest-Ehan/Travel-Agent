@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import { ApiService } from '../../services/api'
 
@@ -116,8 +116,11 @@ export default function HotelDetailsPage() {
   const [hotel, setHotel] = useState<HotelDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [activeImageIndex, setActiveImageIndex] = useState(0)
+  const [activeImageIndex, setActiveImageIndex] = useState<number | null>(null)
   const [selectedProgramIndex, setSelectedProgramIndex] = useState(0)
+  const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set())
+  const [showFullGallery, setShowFullGallery] = useState(false)
+  const [visibleImages, setVisibleImages] = useState<Set<number>>(new Set())
 
   const hotelId = params.id as string
   const currency = searchParams.get('currency') || 'USD'
@@ -125,6 +128,109 @@ export default function HotelDetailsPage() {
   const adults = searchParams.get('adults') || '2'
   const children_ages = searchParams.get('children_ages') || ''
   const rooms = searchParams.get('rooms') || '1'
+
+  const handleImageLoad = (index: number) => {
+    setLoadedImages(prev => new Set(prev).add(index))
+  }
+
+  const getImageSize = (index: number, totalImages: number) => {
+    if (totalImages <= 4) {
+      return index === 0 ? 'col-span-2 row-span-2' : 'col-span-1 row-span-1'
+    }
+    
+    if (index === 0) return 'col-span-2 row-span-2'
+    if (index === 1) return 'col-span-1 row-span-1'
+    if (index === 2) return 'col-span-1 row-span-1'
+    if (index === 3) return 'col-span-2 row-span-1'
+    return 'col-span-1 row-span-1'
+  }
+
+  // Intersection Observer for lazy loading individual images
+  useEffect(() => {
+    if (!hotel?.images) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const index = parseInt(entry.target.getAttribute('data-index') || '0')
+            setVisibleImages(prev => new Set(prev).add(index))
+            observer.unobserve(entry.target)
+          }
+        })
+      },
+      { 
+        threshold: 0.1,
+        rootMargin: '50px' // Start loading 50px before image comes into view
+      }
+    )
+
+    // Use setTimeout to ensure DOM is ready
+    setTimeout(() => {
+      const imageContainers = document.querySelectorAll('[data-image-container]')
+      imageContainers.forEach(container => {
+        observer.observe(container)
+      })
+    }, 100)
+
+    return () => observer.disconnect()
+  }, [hotel?.images, showFullGallery])
+
+  // Alternative approach: Load images when they become visible in the viewport
+  useEffect(() => {
+    if (!hotel?.images) return
+
+    const handleScroll = () => {
+      const imageContainers = document.querySelectorAll('[data-image-container]')
+      imageContainers.forEach((container, index) => {
+        if (visibleImages.has(index)) return // Skip already visible images
+        
+        const rect = container.getBoundingClientRect()
+        const isVisible = rect.top < window.innerHeight + 100 && rect.bottom > 0
+        
+        if (isVisible) {
+          setVisibleImages(prev => new Set(prev).add(index))
+        }
+      })
+    }
+
+    // Initial check
+    handleScroll()
+    
+    // Add scroll listener
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [hotel?.images, visibleImages])
+
+  // Load first few images immediately
+  useEffect(() => {
+    if (hotel?.images) {
+      const initialImages = hotel.images.slice(0, 4)
+      initialImages.forEach((_, index) => {
+        setTimeout(() => {
+          setVisibleImages(prev => new Set(prev).add(index))
+        }, index * 100) // Stagger loading
+      })
+    }
+  }, [hotel?.images])
+
+  // Keyboard support for modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (activeImageIndex !== null && hotel?.images) {
+        if (e.key === 'Escape') {
+          setActiveImageIndex(null)
+        } else if (e.key === 'ArrowLeft') {
+          setActiveImageIndex(activeImageIndex === 0 ? hotel.images.length - 1 : activeImageIndex - 1)
+        } else if (e.key === 'ArrowRight') {
+          setActiveImageIndex(activeImageIndex === hotel.images.length - 1 ? 0 : activeImageIndex + 1)
+        }
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [activeImageIndex, hotel?.images])
 
   useEffect(() => {
     const fetchHotelDetails = async () => {
@@ -215,52 +321,121 @@ export default function HotelDetailsPage() {
             {/* Hotel Header */}
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
               {/* Image Gallery */}
-              <div className="relative h-96 bg-gray-200">
+              <div className="relative">
                 {hotel.images && hotel.images.length > 0 ? (
                   <>
-                    <img
-                      src={`https://media.fora.travel/foratravelportal/image/upload/c_fill,w_800,h_400,g_auto/f_auto/q_auto/v1/${hotel.images[activeImageIndex].public_id}`}
-                      alt={hotel.name}
-                      className="w-full h-full object-cover"
-                    />
-                    {/* Image Navigation */}
-                    {hotel.images.length > 1 && (
-                      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
-                        {hotel.images.map((_, index) => (
-                          <button
-                            key={index}
-                            onClick={() => setActiveImageIndex(index)}
-                            className={`w-3 h-3 rounded-full transition-colors ${
-                              index === activeImageIndex ? 'bg-white' : 'bg-white/50'
-                            }`}
-                          />
-                        ))}
+                    {/* Main Gallery Grid */}
+                    <div className={`grid grid-cols-2 lg:grid-cols-4 gap-2 p-4 ${showFullGallery ? 'h-auto' : 'h-96 overflow-hidden'}`}>
+                      {hotel.images.slice(0, showFullGallery ? hotel.images.length : 8).map((image, index) => (
+                        <div
+                          key={index}
+                          data-image-container
+                          data-index={index}
+                          className={`relative group cursor-pointer transition-all duration-300 hover:scale-105 ${
+                            index === 0 ? 'col-span-2 row-span-2' : 
+                            index === 1 ? 'col-span-1 row-span-1' :
+                            index === 2 ? 'col-span-1 row-span-1' :
+                            index === 3 ? 'col-span-2 row-span-1' :
+                            'col-span-1 row-span-1'
+                          }`}
+                          onClick={() => setActiveImageIndex(index)}
+                        >
+                          <div className="relative w-full h-full min-h-[200px] bg-gray-200 rounded-lg overflow-hidden">
+                            {visibleImages.has(index) ? (
+                              <img
+                                src={`https://media.fora.travel/foratravelportal/image/upload/c_fill,w_800,h_600,g_auto/f_auto/q_auto/v1/${image.public_id}`}
+                                alt={image.caption || hotel.name}
+                                className="w-full h-full object-cover transition-all duration-300 group-hover:scale-110"
+                                onLoad={() => handleImageLoad(index)}
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none'
+                                  handleImageLoad(index)
+                                }}
+                              />
+                            ) : (
+                              <div className="w-full h-full animate-pulse bg-gray-300 rounded-lg"></div>
+                            )}
+                            
+                            {/* Overlay on hover */}
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 rounded-lg">
+                              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <div className="bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium text-gray-800">
+                                  View
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* View All Button */}
+                    {hotel.images.length > 8 && (
+                      <div className="p-4 border-t border-gray-100">
+                        <button
+                          onClick={() => setShowFullGallery(!showFullGallery)}
+                          className="w-full py-3 px-4 bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          {showFullGallery ? `Show Less (${hotel.images.length} photos)` : `View All ${hotel.images.length} Photos`}
+                        </button>
                       </div>
                     )}
-                    {/* Previous/Next Buttons */}
-                    {hotel.images.length > 1 && (
-                      <>
-                        <button
-                          onClick={() => setActiveImageIndex((prev) => (prev === 0 ? hotel.images.length - 1 : prev - 1))}
-                          className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full transition-colors"
-                        >
-                          <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => setActiveImageIndex((prev) => (prev === hotel.images.length - 1 ? 0 : prev + 1))}
-                          className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full transition-colors"
-                        >
-                          <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </button>
-                      </>
+
+                    {/* Full Screen Modal */}
+                    {activeImageIndex !== null && (
+                      <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+                        <div className="relative max-w-7xl max-h-full">
+                          <img
+                            src={`https://media.fora.travel/foratravelportal/image/upload/c_fill,w_1200,h_800,g_auto/f_auto/q_auto/v1/${hotel.images[activeImageIndex].public_id}`}
+                            alt={hotel.images[activeImageIndex].caption || hotel.name}
+                            className="max-w-full max-h-full object-contain rounded-lg"
+                          />
+                          
+                          {/* Close Button */}
+                          <button
+                            onClick={() => setActiveImageIndex(null)}
+                            className="absolute top-4 right-4 bg-white/20 hover:bg-white/30 backdrop-blur-sm p-2 rounded-full transition-colors"
+                          >
+                            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+
+                          {/* Navigation Buttons */}
+                          {hotel.images.length > 1 && (
+                            <>
+                              <button
+                                onClick={() => setActiveImageIndex(activeImageIndex === 0 ? hotel.images.length - 1 : activeImageIndex - 1)}
+                                className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 backdrop-blur-sm p-3 rounded-full transition-colors"
+                              >
+                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                </svg>
+                              </button>
+                              <button
+                                onClick={() => setActiveImageIndex(activeImageIndex === hotel.images.length - 1 ? 0 : activeImageIndex + 1)}
+                                className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 backdrop-blur-sm p-3 rounded-full transition-colors"
+                              >
+                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                              </button>
+                            </>
+                          )}
+
+                          {/* Image Counter */}
+                          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/50 backdrop-blur-sm px-4 py-2 rounded-full text-white text-sm">
+                            {activeImageIndex + 1} of {hotel.images.length}
+                          </div>
+                        </div>
+                      </div>
                     )}
                   </>
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-400">
+                  <div className="h-96 flex items-center justify-center text-gray-400">
                     <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
