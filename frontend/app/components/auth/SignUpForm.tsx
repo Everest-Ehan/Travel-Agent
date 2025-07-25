@@ -1,7 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import React, { useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import EmailVerification from './EmailVerification'
 import Alert from '../ui/Alert'
@@ -12,7 +11,6 @@ interface SignUpFormProps {
 }
 
 export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
-  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -20,14 +18,7 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [showEmailVerification, setShowEmailVerification] = useState(false)
-  const { signUp, signInWithGoogle, user } = useAuth()
-
-  // Redirect if user is already logged in
-  useEffect(() => {
-    if (user) {
-      router.push('/')
-    }
-  }, [user, router])
+  const { signUp, signInWithGoogle } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

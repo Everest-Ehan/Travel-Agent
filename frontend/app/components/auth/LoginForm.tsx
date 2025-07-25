@@ -1,7 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import React, { useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import PasswordReset from './PasswordReset'
 import Alert from '../ui/Alert'
@@ -12,20 +11,12 @@ interface LoginFormProps {
 }
 
 export default function LoginForm({ onSwitchToSignUp }: LoginFormProps) {
-  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showPasswordReset, setShowPasswordReset] = useState(false)
-  const { signIn, signInWithGoogle, user } = useAuth()
-
-  // Redirect if user is already logged in
-  useEffect(() => {
-    if (user) {
-      router.push('/')
-    }
-  }, [user, router])
+  const { signIn, signInWithGoogle } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
