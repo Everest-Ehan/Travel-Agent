@@ -26,7 +26,13 @@ app = FastAPI()
 # to make requests to this backend (running on localhost:8000).
 
 # Allow all origins for development (do not use in production)
-origins = ["*"]
+origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://localhost:3000",
+    "https://127.0.0.1:3000",
+    "*"  # Allow all origins for development
+]
 
 app.add_middleware(
     CORSMiddleware,
@@ -34,6 +40,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"]
 )
 
 # --- API Scraping Logic ---

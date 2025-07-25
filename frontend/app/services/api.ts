@@ -1,19 +1,34 @@
 import { Hotel, RateSummaryRequest, RateSummaryResponse } from '../types/hotel'
 
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
+console.log('API_BASE_URL', API_BASE_URL)
 
 export class ApiService {
   static async searchHotels(query: string): Promise<Hotel[]> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/search?query=${encodeURIComponent(query)}`)
+      const url = `${API_BASE_URL}/api/search?query=${encodeURIComponent(query)}`
+      console.log('🔍 Making request to:', url)
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        },
+      })
+      
+      console.log('📡 Response status:', response.status)
+      console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()))
       
       if (!response.ok) {
         const errorData = await response.json()
+        console.error('❌ API Error:', errorData)
         throw new Error(errorData.detail || 'Failed to search hotels')
       }
 
       const data = await response.json()
-      console.log('API /api/search response:', data)
+      console.log('✅ API /api/search response:', data)
       
       // Transform the API response to match our Hotel interface
       const transformedHotels = data.results?.map((hotel: any) => ({
@@ -40,7 +55,12 @@ export class ApiService {
 
       return transformedHotels
     } catch (error) {
-      console.error('Error searching hotels:', error)
+      console.error('💥 Error searching hotels:', error)
+      console.error('💥 Error details:', {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        name: error instanceof Error ? error.name : 'Unknown'
+      })
       throw error
     }
   }
@@ -51,6 +71,7 @@ export class ApiService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
         },
         body: JSON.stringify(request),
       })
@@ -78,7 +99,11 @@ export class ApiService {
       url += `?${query}`;
     }
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: {
+          'ngrok-skip-browser-warning': 'true',
+        },
+      });
       if (!response.ok) {
         const errorData = await response.json();
         console.error('Error fetching hotel details:', errorData);
@@ -98,7 +123,11 @@ export class ApiService {
     const query = new URLSearchParams(params as any).toString();
     const url = `${API_BASE_URL}/api/filtered-hotels?${query}`;
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: {
+          'ngrok-skip-browser-warning': 'true',
+        },
+      });
       if (!response.ok) {
         const errorData = await response.json();
         console.error('Error fetching filtered hotels:', errorData);
