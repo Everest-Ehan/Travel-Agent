@@ -1,6 +1,6 @@
 import { Hotel, RateSummaryRequest, RateSummaryResponse } from '../types/hotel'
 
-const API_BASE_URL = 'http://localhost:8000'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
 
 export class ApiService {
   static async searchHotels(query: string): Promise<Hotel[]> {

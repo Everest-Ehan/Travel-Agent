@@ -67,6 +67,7 @@ interface HotelDetails {
     use_browse_header: boolean
     is_limited_payment_history: boolean
     is_onyx_payer: boolean
+    signup_link?: string
   }>
   luxe_category: string
   property_name: string | null
@@ -85,7 +86,10 @@ interface HotelDetails {
   gmaps_link: string
   restricted_booking_methods: boolean
   neighborhood: string | null
-  loyalty_program: string | null
+  loyalty_program: {
+    name: string;
+    signup_link?: string;
+  } | null;
   awards: Array<{
     label: string
     value: number
@@ -737,7 +741,15 @@ export default function HotelDetailsPage() {
                 {hotel.loyalty_program && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">Loyalty Program</span>
-                    <span className="font-medium text-gray-900">{hotel.loyalty_program}</span>
+                    <span className="font-medium text-gray-900">
+                      {hotel.loyalty_program.name}
+                      {hotel.loyalty_program.signup_link && (
+                        <>
+                          {" "}
+                          <a href={hotel.loyalty_program.signup_link} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline ml-1">Sign up</a>
+                        </>
+                      )}
+                    </span>
                   </div>
                 )}
               </div>
