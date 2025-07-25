@@ -82,19 +82,6 @@ export default function PerksPopup({
           <div className="p-8 overflow-y-auto max-h-[calc(85vh-200px)]">
             {program.typical_perks ? (
               <div className="space-y-6">
-                {/* Commission Info */}
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="bg-blue-100 rounded-full p-2">
-                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                      </svg>
-                    </div>
-                    <h3 className="text-lg font-semibold text-blue-900">Commission Benefits</h3>
-                  </div>
-                  <p className="text-blue-800 font-medium">{program.commission} commission rate</p>
-                </div>
-
                 {/* Perks Content */}
                 <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                   <div className="bg-gradient-to-r from-green-50 to-emerald-50 px-6 py-4 border-b border-gray-200">
@@ -181,24 +168,6 @@ export default function PerksPopup({
                     </ul>
                   </div>
                 </div>
-
-                {/* Notice Section */}
-                {program.notice_text && (
-                  <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl p-6 border border-yellow-200">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="bg-yellow-100 rounded-full p-2">
-                        <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                        </svg>
-                      </div>
-                      <h4 className="font-semibold text-yellow-900">Important Information</h4>
-                    </div>
-                    <div 
-                      className="text-sm text-yellow-800 prose prose-sm max-w-none"
-                      dangerouslySetInnerHTML={{ __html: program.notice_text }}
-                    />
-                  </div>
-                )}
               </div>
             ) : (
               <div className="text-center py-12">
