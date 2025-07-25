@@ -117,6 +117,125 @@ export class ApiService {
     }
   }
 
+
+
+  // Card management functions
+  static async getClientCards(clientId: string) {
+    try {
+      const url = `${API_BASE_URL}/api/clients/${clientId}/cards`;
+      console.log('🔍 Making request to:', url);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        },
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('❌ API Error:', errorData);
+        throw new Error(errorData.detail || 'Failed to fetch client cards');
+      }
+
+      // Expect {results: Card[]}
+      const data = await response.json();
+      console.log('✅ API /api/clients/{clientId}/cards response:', data);
+      return data;
+    } catch (error) {
+      console.error('Error fetching client cards:', error);
+      throw error;
+    }
+  }
+
+  static async createClientCard(clientId: string, cardData: any) {
+    // Backend now handles two-step POST-then-PUT
+    try {
+      const url = `${API_BASE_URL}/api/clients/${clientId}/cards`;
+      console.log('🔍 Making request to:', url);
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        },
+        body: JSON.stringify(cardData),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('❌ API Error:', errorData);
+        throw new Error(errorData.detail || 'Failed to create client card');
+      }
+
+      const data = await response.json();
+      console.log('✅ API /api/clients/{clientId}/cards POST response:', data);
+      return data;
+    } catch (error) {
+      console.error('Error creating client card:', error);
+      throw error;
+    }
+  }
+
+  static async updateClientCard(clientId: string, cardId: string, cardData: any) {
+    try {
+      const url = `${API_BASE_URL}/api/clients/${clientId}/cards/${cardId}`;
+      console.log('🔍 Making request to:', url);
+      
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        },
+        body: JSON.stringify(cardData),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('❌ API Error:', errorData);
+        throw new Error(errorData.detail || 'Failed to update client card');
+      }
+
+      const data = await response.json();
+      console.log('✅ API /api/clients/{clientId}/cards/{cardId} PUT response:', data);
+      return data;
+    } catch (error) {
+      console.error('Error updating client card:', error);
+      throw error;
+    }
+  }
+
+  static async deleteClientCard(clientId: string, cardId: string) {
+    try {
+      const url = `${API_BASE_URL}/api/clients/${clientId}/cards/${cardId}`;
+      console.log('🔍 Making request to:', url);
+      
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        },
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('❌ API Error:', errorData);
+        throw new Error(errorData.detail || 'Failed to delete client card');
+      }
+
+      const data = await response.json();
+      console.log('✅ API /api/clients/{clientId}/cards/{cardId} DELETE response:', data);
+      return data;
+    } catch (error) {
+      console.error('Error deleting client card:', error);
+      throw error;
+    }
+  }
+
   // Fetch filtered hotel list (with user filters)
   static async fetchFilteredHotels(params: {view_mode: string, adults: number, dates: string, rooms: number, q: string, currency: string}) {
     // Call backend proxy endpoint

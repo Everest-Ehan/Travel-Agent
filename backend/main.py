@@ -454,6 +454,151 @@ async def create_booking(request: Request):
         print(f"Unexpected error in create_booking: {e}")
         raise HTTPException(status_code=500, detail="An internal server error occurred.")
 
+@app.get('/api/clients/{client_id}/cards')
+def get_client_cards(client_id: str = Path(...)):
+    """
+    API endpoint to get cards for a specific client.
+    """
+    try:
+        headers = auth_service.get_auth_headers()
+        cookies = auth_service.get_session_cookies()
+        url = f'https://api.fora.travel/v1/clients/{client_id}/'
+        print(f"Making get client (for cards) request to: {url}")
+        response = requests.get(url, headers=headers, cookies=cookies, timeout=20)
+        response.raise_for_status()
+        data = response.json()
+        print(f"/api/clients/{client_id} result: {json.dumps(data, indent=2)}")
+        # Return only the cards array
+        return {"results": data.get("cards", [])}
+    except Exception as e:
+        print(f"Unexpected error in get_client_cards: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch client cards.")
+
+@app.post('/api/clients/{client_id}/cards')
+async def create_client_card(client_id: str = Path(...), request: Request = None):
+    """
+    API endpoint to create a new card for a client (Fora two-step: POST then PUT).
+    """
+    try:
+        headers = auth_service.get_auth_headers()
+        cookies = auth_service.get_session_cookies()
+        
+        # Step 1: POST to get new card ID
+        post_url = f'https://api.fora.travel/v1/clients/{client_id}/cards/'
+        print(f"Step 1: POST to {post_url} with empty payload")
+        post_resp = requests.post(post_url, headers=headers, cookies=cookies, json={}, timeout=20)
+        post_resp.raise_for_status()
+        card_info = post_resp.json()
+        card_id = card_info['id']
+        print(f"Step 1: Got card ID {card_id}")
+        
+        # Step 2: PUT card data
+        card_data = await request.json()
+        print(f"Step 2: PUT card data: {json.dumps(card_data, indent=2)}")
+        
+        put_url = f'https://api.fora.travel/v1/clients/{client_id}/cards/{card_id}/'
+        print(f"Step 2: PUT to {put_url}")
+        put_resp = requests.put(put_url, headers=headers, cookies=cookies, json=card_data, timeout=20)
+        
+        if not put_resp.ok:
+            print(f"PUT request failed with status {put_resp.status_code}")
+            print(f"PUT response: {put_resp.text}")
+            put_resp.raise_for_status()
+            
+        result = put_resp.json()
+        print(f"Step 2: PUT successful, result: {json.dumps(result, indent=2)}")
+        return result
+    except Exception as e:
+        print(f"Unexpected error in create_client_card: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create client card.")
+
+@app.put('/api/clients/{client_id}/cards/{card_id}')
+async def update_client_card(client_id: str = Path(...), card_id: str = Path(...), request: Request = None):
+    """
+    API endpoint to update a client's card.
+    """
+    try:
+        # Get authentication headers with automatic token refresh
+        headers = auth_service.get_auth_headers()
+        cookies = auth_service.get_session_cookies()
+        
+        # Get request data
+        card_data = await request.json()
+        
+        # Construct the API URL
+        url = f'https://api.fora.travel/v1/clients/{client_id}/cards/{card_id}/'
+        
+        print(f"Making update client card request to: {url}")
+        print(f"Card data: {json.dumps(card_data, indent=2)}")
+        print(f"Using auth headers: {headers}")
+        
+        response = requests.put(url, headers=headers, cookies=cookies, json=card_data, timeout=20)
+        response.raise_for_status()
+        
+        data = response.json()
+        print(f"/api/clients/{client_id}/cards/{card_id} PUT result: {json.dumps(data, indent=2)}")
+        return data
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code in [401, 403]:
+            # Try to refresh token and retry once
+            try:
+                print("Authentication failed, attempting token refresh...")
+                headers = auth_service.get_auth_headers(force_refresh=True)
+                response = requests.put(url, headers=headers, cookies=cookies, json=card_data, timeout=20)
+                response.raise_for_status()
+                return response.json()
+            except Exception as refresh_error:
+                print(f"Token refresh failed: {refresh_error}")
+                raise HTTPException(status_code=401, detail="Authentication failed. Please check your session cookie.")
+        else:
+            raise HTTPException(status_code=e.response.status_code, detail=f"API request failed: {e.response.reason}")
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update client card: {e}")
+    except Exception as e:
+        print(f"Unexpected error in update_client_card: {e}")
+        raise HTTPException(status_code=500, detail="An internal server error occurred.")
+
+@app.delete('/api/clients/{client_id}/cards/{card_id}')
+def delete_client_card(client_id: str = Path(...), card_id: str = Path(...)):
+    """
+    API endpoint to delete a client's card.
+    """
+    try:
+        # Get authentication headers with automatic token refresh
+        headers = auth_service.get_auth_headers()
+        cookies = auth_service.get_session_cookies()
+        
+        # Construct the API URL
+        url = f'https://api.fora.travel/v1/clients/{client_id}/cards/{card_id}/'
+        
+        print(f"Making delete client card request to: {url}")
+        print(f"Using auth headers: {headers}")
+        
+        response = requests.delete(url, headers=headers, cookies=cookies, timeout=20)
+        response.raise_for_status()
+        
+        print(f"/api/clients/{client_id}/cards/{card_id} DELETE successful")
+        return {"message": "Card deleted successfully"}
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code in [401, 403]:
+            # Try to refresh token and retry once
+            try:
+                print("Authentication failed, attempting token refresh...")
+                headers = auth_service.get_auth_headers(force_refresh=True)
+                response = requests.delete(url, headers=headers, cookies=cookies, timeout=20)
+                response.raise_for_status()
+                return {"message": "Card deleted successfully"}
+            except Exception as refresh_error:
+                print(f"Token refresh failed: {refresh_error}")
+                raise HTTPException(status_code=401, detail="Authentication failed. Please check your session cookie.")
+        else:
+            raise HTTPException(status_code=e.response.status_code, detail=f"API request failed: {e.response.reason}")
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete client card: {e}")
+    except Exception as e:
+        print(f"Unexpected error in delete_client_card: {e}")
+        raise HTTPException(status_code=500, detail="An internal server error occurred.")
+
 @app.get("/")
 def read_root():
     return {"status": "FastAPI server is running."}
