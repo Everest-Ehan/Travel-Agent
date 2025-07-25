@@ -189,32 +189,80 @@ export default function BookingDetailsSidebar({
             {/* Cancellation Policy */}
             <div>
               <h4 className="font-semibold text-gray-900 mb-3">Cancellation Policy</h4>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {selectedRate.policies.cancellations.map((policy, index) => (
-                  <div key={index} className="border border-gray-200 rounded-lg p-3">
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="text-sm font-medium text-gray-900">
+                  <div key={index} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    {/* Policy Period */}
+                    <div className="mb-3">
+                      <h5 className="text-sm font-semibold text-gray-700 mb-1">Policy Period</h5>
+                      <p className="text-sm text-gray-600">
                         {formatDate(policy.valid_from)}
-                        {policy.valid_until && ` - ${formatDate(policy.valid_until)}`}
-                      </span>
-                      <span className={`text-sm font-semibold px-2 py-1 rounded ${
-                        policy.refundable 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {policy.refundable ? 'Refundable' : 'Non-refundable'}
-                      </span>
+                        {policy.valid_until && ` to ${formatDate(policy.valid_until)}`}
+                      </p>
                     </div>
-                    {policy.penalty_amount && (
-                      <p className="text-sm text-gray-600">
-                        Penalty: {formatCurrency(policy.penalty_amount, policy.penalty_currency)}
-                      </p>
+
+                    {/* Refund Status */}
+                    <div className="mb-3">
+                      <h5 className="text-sm font-semibold text-gray-700 mb-2">Cancellation Status</h5>
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${
+                          policy.refundable 
+                            ? 'bg-green-100 text-green-800 border border-green-200' 
+                            : 'bg-red-100 text-red-800 border border-red-200'
+                        }`}>
+                          {policy.refundable ? (
+                            <>
+                              <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                              Fully Refundable
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                              </svg>
+                              Non-Refundable
+                            </>
+                          )}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Penalty Information */}
+                    {(policy.penalty_amount || policy.penalty_percentage) && (
+                      <div>
+                        <h5 className="text-sm font-semibold text-gray-700 mb-2">Cancellation Penalty</h5>
+                        <div className="bg-white rounded-lg p-3 border border-gray-200">
+                          {policy.penalty_amount && (
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm text-gray-600">Fixed Penalty:</span>
+                              <span className="text-sm font-semibold text-red-600">
+                                {formatCurrency(policy.penalty_amount, policy.penalty_currency)}
+                              </span>
+                            </div>
+                          )}
+                          {policy.penalty_percentage && (
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-gray-600">Percentage Penalty:</span>
+                              <span className="text-sm font-semibold text-red-600">
+                                {policy.penalty_percentage}% of total booking
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     )}
-                    {policy.penalty_percentage && (
-                      <p className="text-sm text-gray-600">
-                        Penalty: {policy.penalty_percentage}%
+
+                    {/* Summary */}
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                      <p className="text-xs text-gray-500">
+                        {policy.refundable 
+                          ? "You can cancel this booking and receive a full refund within the specified period."
+                          : "This booking cannot be cancelled or refunded. Please ensure your travel plans are confirmed."
+                        }
                       </p>
-                    )}
+                    </div>
                   </div>
                 ))}
               </div>
