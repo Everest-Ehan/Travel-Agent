@@ -113,28 +113,14 @@ export default function HotelCard({ hotel, loadingRate = false, loadingCard = fa
                 {hotel.hotel_class}★
               </div>
             )}
-            {hotel.labels && hotel.labels.length > 0 && (
-              hotel.labels.slice(0, 1).map((label, index) => (
-                <span
-                  key={index}
-                  className={`px-2.5 py-1 rounded-full text-xs font-semibold shadow-lg backdrop-blur-sm ${
-                    label.slug === 'reserve' 
-                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' 
-                      : 'bg-gradient-to-r from-green-500 to-green-600 text-white'
-                  }`}
-                >
-                  {label.text}
-                </span>
-              ))
-            )}
           </div>
 
           {/* Favorite Button */}
-          <button className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-lg hover:bg-white transition-all duration-200" onClick={e => e.stopPropagation()}>
+          {/* <button className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-lg hover:bg-white transition-all duration-200" onClick={e => e.stopPropagation()}>
             <svg className="w-5 h-5 text-gray-600 hover:text-red-500 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
             </svg>
-          </button>
+          </button> */}
 
           {/* Hotel Name Overlay */}
           <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
@@ -196,20 +182,18 @@ export default function HotelCard({ hotel, loadingRate = false, loadingCard = fa
               ))}
             </div>
           )}
-          
+
+
           {hotel.programs && hotel.programs.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {hotel.programs.slice(0, 3).map((program, index) => (
-                <img
-                  key={index}
-                  src={program.logo_url}
-                  alt={program.name}
-                  className="h-5 w-auto object-contain"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none'
-                  }}
-                />
-              ))}
+            <div className="flex flex-wrap gap-2 items-center">
+              <div className="px-3 py-1.5 bg-amber-50 rounded-lg border border-amber-100">
+                <span className="text-sm font-medium text-amber-700 flex items-center gap-1.5">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Extra perks included!
+                </span>
+              </div>
             </div>
           )}
         </div>
@@ -257,28 +241,10 @@ export default function HotelCard({ hotel, loadingRate = false, loadingCard = fa
                   {getTotalDisplay()}
                 </div>
               </div>
-              <div className="text-right">
-                <div className="text-xs text-gray-600 uppercase tracking-wide font-medium">Commission</div>
-                <div className="text-lg font-bold text-green-600">
-                  {getCommissionDisplay()}
-                </div>
-              </div>
             </div>
             
             {/* Rate Details Grid */}
             <div className="grid grid-cols-3 gap-2 text-center">
-              <div className="bg-white/70 rounded-lg p-2">
-                <div className="text-xs text-gray-600 font-medium">Commissionable</div>
-                <div className="text-sm font-semibold text-gray-800">
-                  {hotel.rate.is_commissionable ? 'Yes' : 'No'}
-                </div>
-              </div>
-              <div className="bg-white/70 rounded-lg p-2">
-                <div className="text-xs text-gray-600 font-medium">Children</div>
-                <div className="text-sm font-semibold text-gray-800 capitalize">
-                  {hotel.rate.children_support}
-                </div>
-              </div>
               {hotel.rate.payout_speed && (
                 <div className="bg-white/70 rounded-lg p-2">
                   <div className="text-xs text-gray-600 font-medium">Payout</div>
@@ -290,36 +256,6 @@ export default function HotelCard({ hotel, loadingRate = false, loadingCard = fa
             </div>
           </div>
         ) : null}
-
-        {/* Hotel Stats */}
-        <div className="mb-4 grid grid-cols-2 gap-3 text-sm">
-          {hotel.commission_range && (
-            <div className="flex items-center gap-2 text-gray-600">
-              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-              </svg>
-              <span>{hotel.commission_range}</span>
-            </div>
-          )}
-          {hotel.payout_speed && (
-            <div className="flex items-center gap-2 text-gray-600">
-              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>{hotel.payout_speed.replace('payout ', '')}</span>
-            </div>
-          )}
-        </div>
-
-        {/* Booking Stats */}
-        {hotel.last_year_booking_count && hotel.last_year_booking_count > 0 && (
-          <div className="mb-4 flex items-center gap-2 text-xs text-gray-500">
-            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            <span>{hotel.last_year_booking_count} {hotel.last_year_booking_count === 1 ? 'booking' : 'bookings'} last year</span>
-          </div>
-        )}
 
         {/* Action Buttons */}
         <div className="flex gap-3">

@@ -468,22 +468,6 @@ export default function HotelDetailsPage() {
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-2">
-                    {hotel.labels && hotel.labels.length > 0 && (
-                      <div className="flex gap-2">
-                        {hotel.labels.map((label, index) => (
-                          <span
-                            key={index}
-                            className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                              label.slug === 'reserve' 
-                                ? 'bg-blue-100 text-blue-800' 
-                                : 'bg-green-100 text-green-800'
-                            }`}
-                          >
-                            {label.text}
-                          </span>
-                        ))}
-                      </div>
-                    )}
                     {hotel.average_review_rating && (
                       <div className="flex items-center gap-1">
                         <div className="flex text-yellow-400">
@@ -607,57 +591,83 @@ export default function HotelDetailsPage() {
                   </div>
 
                   {/* Rate Program Tabs */}
-                  <div className="flex gap-2 overflow-x-auto pb-2">
-                    {hotel.programs.map((program, index) => (
-                      <div
-                        key={program.id}
-                        onClick={() => setSelectedProgramIndex(index)}
-                        className={`flex-shrink-0 flex flex-col items-center p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                          index === selectedProgramIndex 
-                            ? 'border-primary-500 bg-primary-50' 
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 mb-2">
-                          {program.logo_url && (
-                            <img
-                              src={program.logo_url}
-                              alt={program.name}
-                              className="h-6 w-auto object-contain"
-                            />
-                          )}
-                          <span className={`text-sm font-semibold ${
-                            index === selectedProgramIndex ? 'text-primary-700' : 'text-gray-700'
-                          }`}>
-                            {program.name}
-                          </span>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-xs text-gray-500 mb-1">Rates from</div>
-                          <div className={`text-sm font-bold ${
-                            index === selectedProgramIndex ? 'text-primary-700' : 'text-gray-900'
-                          }`}>
-                            ${(() => {
-                              // Use different base rates for each program type based on commission
-                              const baseRate = 1200 // Base rate
-                              const commissionPercent = parseInt(program.commission.replace('%', ''))
-                              // Higher commission programs typically have higher rates
-                              const rateMultiplier = commissionPercent / 10
-                              const calculatedRate = Math.round(baseRate * rateMultiplier)
-                              return calculatedRate.toLocaleString()
-                            })()}
-                          </div>
-                          <div className="flex items-center gap-1 mt-1">
-                            <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
-                            </svg>
-                            <span className="text-xs text-gray-600">Perks</span>
-                            <span className="text-xs font-semibold text-green-600">{program.commission}</span>
-                          </div>
-                        </div>
+                  {(() => {
+                    // Find the index of Virtuoso in the programs array
+                    const virtuosoIndex = hotel.programs.findIndex(
+                      (program) => program.name === 'Virtuoso'
+                    );
+                    // If Virtuoso is present, show all programs up to and including Virtuoso
+                    // If not, show only the first program
+                    const displayPrograms =
+                      virtuosoIndex !== -1
+                        ? hotel.programs.slice(0, virtuosoIndex + 1)
+                        : hotel.programs.slice(0, 1);
+
+                    return (
+                      <div className="flex gap-2 overflow-x-auto pb-2">
+                        {displayPrograms.map((program, index) => {
+                          // The index here is relative to displayPrograms, so we need to map it to the original index for selection
+                          const originalIndex =
+                            virtuosoIndex !== -1 ? index : 0;
+                          return (
+                            <div
+                              key={program.id}
+                              onClick={() => setSelectedProgramIndex(
+                                virtuosoIndex !== -1 ? index : 0
+                              )}
+                              className={`flex-shrink-0 flex flex-col items-center p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                                originalIndex === selectedProgramIndex
+                                  ? 'border-primary-500 bg-primary-50'
+                                  : 'border-gray-200 hover:border-gray-300'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 mb-2">
+                                {program.name === 'Fora Reserve' ? (
+                                  <svg className="w-6 h-6 text-amber-500" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 2L9.19 8.63L2 9.24L7.46 13.97L5.82 21L12 17.27L18.18 21L16.54 13.97L22 9.24L14.81 8.63L12 2Z" />
+                                  </svg>
+                                ) : program.logo_url && (
+                                  <img
+                                    src={program.logo_url}
+                                    alt={program.name}
+                                    className="h-6 w-auto object-contain"
+                                  />
+                                )}
+                                <span className={`text-sm font-semibold ${
+                                  originalIndex === selectedProgramIndex ? 'text-primary-700' : 'text-gray-700'
+                                }`}>
+                                  {program.name === 'Fora Reserve' ? 'Reserve' : program.name}
+                                </span>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-xs text-gray-500 mb-1">Rates from</div>
+                                <div className={`text-sm font-bold ${
+                                  originalIndex === selectedProgramIndex ? 'text-primary-700' : 'text-gray-900'
+                                }`}>
+                                  ${(() => {
+                                    // Use different base rates for each program type based on commission
+                                    const baseRate = 1200 // Base rate
+                                    const commissionPercent = parseInt(program.commission.replace('%', ''))
+                                    // Higher commission programs typically have higher rates
+                                    const rateMultiplier = commissionPercent / 10
+                                    const calculatedRate = Math.round(baseRate * rateMultiplier)
+                                    return calculatedRate.toLocaleString()
+                                  })()}
+                                </div>
+                                <div className="flex items-center gap-1 mt-1">
+                                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                                  </svg>
+                                  <span className="text-xs text-gray-600">Perks</span>
+                                  <span className="text-xs font-semibold text-green-600">{program.commission}</span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })()}
 
                   {/* Selected Program Details */}
                   {hotel.programs[selectedProgramIndex] && (
@@ -665,159 +675,85 @@ export default function HotelDetailsPage() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                           <a href="#" className="text-primary-600 hover:text-primary-700 text-sm font-medium">
-                            See {hotel.programs[selectedProgramIndex].name} perks
+                            See {(hotel.programs[selectedProgramIndex].name === 'Fora Reserve' ? 'Reserve' : hotel.programs[selectedProgramIndex].name)} perks
                           </a>
-                          <span className="text-sm text-gray-600">
-                            {hotel.programs[selectedProgramIndex].commission} (payout {hotel.programs[selectedProgramIndex].payout_speed.replace('payout ', '')})
-                          </span>
                         </div>
-                        <div className="flex items-center gap-1 text-sm text-gray-600">
-                          <span>Onyx payer</span>
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        </div>
+
                       </div>
                     </div>
                   )}
                 </div>
 
                 {/* Main Content Area */}
-                <div className="grid grid-cols-1 xl:grid-cols-3 gap-0">
-                  {/* Book In Portal */}
-                  <div className="p-6 border-r border-gray-200 xl:col-span-2">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900">Book In Portal (3 results)</h3>
-                      <select className="text-sm border border-gray-300 rounded-lg px-3 py-1">
-                        <option>Show rates in USD ($)</option>
-                      </select>
-                    </div>
-
-                    {/* Important Notice */}
-                    {hotel.programs[selectedProgramIndex] && hotel.programs[selectedProgramIndex].notice_text && (
-                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-                        <div className="flex items-start gap-3">
-                          <svg className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          <div 
-                            className="text-sm text-yellow-800 prose prose-sm max-w-none"
-                            dangerouslySetInnerHTML={{ __html: hotel.programs[selectedProgramIndex].notice_text }}
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Room Options */}
-                    <div className="space-y-4">
-                      {(() => {
-                        const selectedProgram = hotel.programs[selectedProgramIndex]
-                        const baseRate = 1200
-                        const commissionPercent = parseInt(selectedProgram?.commission.replace('%', '') || '10')
-                        const rateMultiplier = commissionPercent / 10
-                        
-                        // Generate dynamic room options based on selected program
-                        const roomTypes = [
-                          {
-                            name: "Deluxe King - floor-to-ceiling windows, antique artwork, oversized bath, double marble vanity",
-                            avgRate: Math.round(baseRate * rateMultiplier * 1.2),
-                            totalRate: Math.round(baseRate * rateMultiplier * 1.2 * 8 * 1.15), // 8 nights + 15% taxes
-                            commission: selectedProgram?.commission || "10%"
-                          },
-                          {
-                            name: "Junior Suite Double - mountain views, floor-to-ceiling windows, idyllic decor, oversized tub, double vanity",
-                            avgRate: Math.round(baseRate * rateMultiplier * 1.6),
-                            totalRate: Math.round(baseRate * rateMultiplier * 1.6 * 8 * 1.15),
-                            commission: selectedProgram?.commission || "10%"
-                          },
-                          {
-                            name: "Executive Suite - living room, elegant decor, dining table, wet bar, oversized tub, double vanity",
-                            avgRate: Math.round(baseRate * rateMultiplier * 2.1),
-                            totalRate: Math.round(baseRate * rateMultiplier * 2.1 * 8 * 1.15),
-                            commission: selectedProgram?.commission || "10%"
-                          }
-                        ]
-                        
-                                                 return roomTypes.map((room, index) => (
-                          <div key={index} className="border border-gray-200 rounded-lg p-4">
-                            <h4 className="font-semibold text-gray-900 mb-3 text-sm">{room.name}</h4>
-                            <div className="flex items-center justify-between mb-3">
-                              <div>
-                                <div className="text-sm text-gray-600">Average per night</div>
-                                <div className="text-lg font-bold text-gray-900">${room.avgRate.toLocaleString()}</div>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-sm text-gray-600">Total including taxes & fees</div>
-                                <div className="text-lg font-bold text-gray-900">${room.totalRate.toLocaleString()}</div>
-                              </div>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <div className="flex gap-2">
-                                <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">
-                                  {hotel.programs[selectedProgramIndex]?.name || 'Fora Reserve'}
-                                </span>
-                                <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded">
-                                  Deposit Required
-                                </span>
-                                <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded">
-                                  Non-refundable
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1 text-green-600">
-                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                                </svg>
-                                <span className="text-sm font-semibold">{room.commission} commission</span>
-                              </div>
-                            </div>
-                          </div>
-                        ))
-                      })()}
-                    </div>
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Book In Portal (3 results)</h3>
+                    <select className="text-sm border border-gray-300 rounded-lg px-3 py-1">
+                      <option>Show rates in USD ($)</option>
+                    </select>
                   </div>
 
-                  {/* Book Outside Portal */}
-                  <div className="p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900">Book Outside Portal</h3>
-                      <a href="#" className="text-primary-600 hover:text-primary-700 text-sm">
-                        When should I book outside Portal?
-                      </a>
-                    </div>
-
-                    {/* IATA Information */}
-                    <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                      <h4 className="font-semibold text-gray-900 mb-2">Use Fora's IATA to earn commission</h4>
-                      <p className="text-sm text-gray-600 mb-3">
-                        Input this number into the IATA field to earn commission (all other fields will not be accepted).
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-lg font-bold text-gray-900">33520476</span>
-                        <button className="p-1 hover:bg-gray-200 rounded">
-                          <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Booking Instructions */}
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="font-semibold text-gray-900 mb-2">Booking Instructions</h4>
-                                                 <div className="text-sm text-gray-700 space-y-2">
-                           <p>All {hotel.programs[selectedProgramIndex]?.name || 'Fora Reserve'} rates should be booked within Portal.</p>
-                          <p>Please contact the property's reservations team directly and mention you are a Fora advisor wishing to book Reserve rates should you wish to make a booking off Portal.</p>
+                  {/* Room Options */}
+                  <div className="space-y-4">
+                    {(() => {
+                      const selectedProgram = hotel.programs[selectedProgramIndex]
+                      const baseRate = 1200
+                      const commissionPercent = parseInt(selectedProgram?.commission.replace('%', '') || '10')
+                      const rateMultiplier = commissionPercent / 10
+                      
+                      // Generate dynamic room options based on selected program
+                      const roomTypes = [
+                        {
+                          name: "Deluxe King - floor-to-ceiling windows, antique artwork, oversized bath, double marble vanity",
+                          avgRate: Math.round(baseRate * rateMultiplier * 1.2),
+                          totalRate: Math.round(baseRate * rateMultiplier * 1.2 * 8 * 1.15), // 8 nights + 15% taxes
+                          commission: selectedProgram?.commission || "10%"
+                        },
+                        {
+                          name: "Junior Suite Double - mountain views, floor-to-ceiling windows, idyllic decor, oversized tub, double vanity",
+                          avgRate: Math.round(baseRate * rateMultiplier * 1.6),
+                          totalRate: Math.round(baseRate * rateMultiplier * 1.6 * 8 * 1.15),
+                          commission: selectedProgram?.commission || "10%"
+                        },
+                        {
+                          name: "Executive Suite - living room, elegant decor, dining table, wet bar, oversized tub, double vanity",
+                          avgRate: Math.round(baseRate * rateMultiplier * 2.1),
+                          totalRate: Math.round(baseRate * rateMultiplier * 2.1 * 8 * 1.15),
+                          commission: selectedProgram?.commission || "10%"
+                        }
+                      ]
+                      
+                      return roomTypes.map((room, index) => (
+                        <div key={index} className="border border-gray-200 rounded-lg p-4">
+                          <h4 className="font-semibold text-gray-900 mb-3 text-sm">{room.name}</h4>
+                          <div className="flex items-center justify-between mb-3">
+                            <div>
+                              <div className="text-sm text-gray-600">Average per night</div>
+                              <div className="text-lg font-bold text-gray-900">${room.avgRate.toLocaleString()}</div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-sm text-gray-600">Total including taxes & fees</div>
+                              <div className="text-lg font-bold text-gray-900">${room.totalRate.toLocaleString()}</div>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex gap-2">
+                              <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">
+                                {(hotel.programs[selectedProgramIndex]?.name === 'Fora Reserve' || !hotel.programs[selectedProgramIndex]?.name)
+                                  ? 'Reserve'
+                                  : hotel.programs[selectedProgramIndex]?.name}
+                              </span>
+                              <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded">
+                                Deposit Required
+                              </span>
+                              <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded">
+                                Non-refundable
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-
-                      <div>
-                        <h4 className="font-semibold text-gray-900 mb-2">What to do after booking outside Portal</h4>
-                        <div className="text-sm text-gray-700">
-                          <p>Email your booking confirmation to <span className="font-mono text-primary-600">submit@fora.travel</span>, then complete your submission on the Bookings page in Portal.</p>
-                        </div>
-                      </div>
-                    </div>
+                      ))
+                    })()}
                   </div>
                 </div>
               </div>
@@ -826,32 +762,6 @@ export default function HotelDetailsPage() {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Booking Stats */}
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Booking Statistics</h3>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Last Year Bookings</span>
-                  <span className="font-semibold text-gray-900">{hotel.last_year_booking_count}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Last Year Advisors</span>
-                  <span className="font-semibold text-gray-900">{hotel.last_year_advisor_count}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">All Time Bookings</span>
-                  <span className="font-semibold text-gray-900">{hotel.all_time_booking_count}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">All Time Advisors</span>
-                  <span className="font-semibold text-gray-900">{hotel.all_time_advisor_count}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Commission Range</span>
-                  <span className="font-semibold text-green-600">{hotel.commission_range}</span>
-                </div>
-              </div>
-            </div>
 
             {/* Quick Actions */}
             <div className="bg-white rounded-2xl shadow-lg p-6">
@@ -873,19 +783,6 @@ export default function HotelDetailsPage() {
                       <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
                     </svg>
                     View on Map
-                  </a>
-                )}
-                {hotel.fora_travel_url && (
-                  <a
-                    href={hotel.fora_travel_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 w-full bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-3 rounded-xl font-medium transition-all duration-200"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                    View on Fora
                   </a>
                 )}
               </div>
