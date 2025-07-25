@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { useRouter } from 'next/navigation'
 import { HotelRate, HotelRateProgram } from '../types/hotel'
 
 interface BookingDetailsSidebarProps {
@@ -9,6 +10,7 @@ interface BookingDetailsSidebarProps {
   selectedRate: HotelRate | null
   program: HotelRateProgram | null
   hotelName: string
+  hotelId: string
   startDate?: string
   endDate?: string
   adults?: string
@@ -21,11 +23,14 @@ export default function BookingDetailsSidebar({
   selectedRate,
   program,
   hotelName,
+  hotelId,
   startDate,
   endDate,
   adults,
   rooms
 }: BookingDetailsSidebarProps) {
+  const router = useRouter()
+
   if (!isOpen || !selectedRate || !program) return null
 
   const formatCurrency = (amount: number, currency: string) => {
@@ -52,6 +57,37 @@ export default function BookingDetailsSidebar({
     const end = new Date(endDate)
     const diffTime = Math.abs(end.getTime() - start.getTime())
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  }
+
+           const handleContinue = () => {
+    // Extract required fields for the booking URL and API
+    const cartId = selectedRate.cart_id || selectedRate.cartId || ''
+    const supplierId = selectedRate.supplier_id || selectedRate.supplierId || hotelId || ''
+    const expectedAmount = selectedRate.price.grand_total_items.find(item => item.category === 'grand_total')?.total?.toString() || '0'
+    const expectedCurrency = selectedRate.price.grand_total_items.find(item => item.category === 'grand_total')?.currency || selectedRate.price.avg_per_night.currency
+    const description = selectedRate.room?.description || ''
+
+    // Build query params (minimal, as Fora does)
+    const bookingParams = {
+      hotel_id: hotelId,
+      hotel_name: hotelName,
+      start_date: startDate || '',
+      end_date: endDate || '',
+      adults: adults || '2',
+      rate_code: selectedRate.rate_identifier,
+      rate_id: selectedRate.id,
+      expected_amount: expectedAmount,
+      expected_currency: expectedCurrency,
+      currency: selectedRate.price.avg_per_night.currency,
+      cart_id: cartId,
+      supplier_program_id: program.id,
+      description: description,
+      supplier_id: supplierId
+    }
+
+    // Navigate to booking page with minimal URL params
+    const queryString = new URLSearchParams(bookingParams as any).toString()
+    router.push(`/booking?${queryString}`)
   }
 
   const nights = calculateNights()
@@ -266,17 +302,6 @@ export default function BookingDetailsSidebar({
               </div>
             )}
 
-            {/* Notice Text */}
-            {program.notice_text && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <h5 className="font-medium text-yellow-900 mb-2">Important Notice</h5>
-                <div 
-                  className="text-sm text-yellow-800 prose prose-sm max-w-none"
-                  dangerouslySetInnerHTML={{ __html: program.notice_text }}
-                />
-              </div>
-            )}
-
             {/* Additional Information */}
             <div>
               <h4 className="font-semibold text-gray-900 mb-3">Additional Information</h4>
@@ -300,10 +325,10 @@ export default function BookingDetailsSidebar({
           {/* Footer */}
           <div className="border-t border-gray-200 p-6">
             <button
-              onClick={onClose}
+              onClick={handleContinue}
               className="w-full bg-primary-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-primary-700 transition-colors"
             >
-              Continue
+              Continue to Booking
             </button>
           </div>
         </div>

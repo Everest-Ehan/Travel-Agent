@@ -310,6 +310,150 @@ def get_hotel_rates(
         print(f"Unexpected error in get_hotel_rates: {e}")
         raise HTTPException(status_code=500, detail="An internal server error occurred.")
 
+@app.get('/api/clients')
+def get_clients(
+    search: str = Query('', description="Search query for clients"),
+    limit: int = Query(1000, description="Number of clients to return"),
+    booking_loyalty_programs: bool = Query(True, description="Include booking loyalty programs")
+):
+    """
+    API endpoint to get clients.
+    """
+    try:
+        # Get authentication headers with automatic token refresh
+        headers = auth_service.get_auth_headers()
+        cookies = auth_service.get_session_cookies()
+        
+        # Construct the API URL with query parameters
+        url = 'https://api.fora.travel/v1/clients/'
+        params = {
+            'search': search,
+            'limit': limit,
+            'booking_loyalty_programs': booking_loyalty_programs
+        }
+        
+        print(f"Making clients request to: {url}")
+        print(f"Query parameters: {params}")
+        print(f"Using auth headers: {headers}")
+        
+        response = requests.get(url, headers=headers, cookies=cookies, params=params, timeout=20)
+        response.raise_for_status()
+        
+        data = response.json()
+        print(f"/api/clients result: {json.dumps(data, indent=2)}")
+        return data
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code in [401, 403]:
+            # Try to refresh token and retry once
+            try:
+                print("Authentication failed, attempting token refresh...")
+                headers = auth_service.get_auth_headers(force_refresh=True)
+                response = requests.get(url, headers=headers, cookies=cookies, params=params, timeout=20)
+                response.raise_for_status()
+                return response.json()
+            except Exception as refresh_error:
+                print(f"Token refresh failed: {refresh_error}")
+                raise HTTPException(status_code=401, detail="Authentication failed. Please check your session cookie.")
+        else:
+            raise HTTPException(status_code=e.response.status_code, detail=f"API request failed: {e.response.reason}")
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch clients: {e}")
+    except Exception as e:
+        print(f"Unexpected error in get_clients: {e}")
+        raise HTTPException(status_code=500, detail="An internal server error occurred.")
+
+@app.post('/api/clients')
+async def create_client(request: Request):
+    """
+    API endpoint to create a new client.
+    """
+    try:
+        # Get authentication headers with automatic token refresh
+        headers = auth_service.get_auth_headers()
+        cookies = auth_service.get_session_cookies()
+        
+        # Get request data
+        client_data = await request.json()
+        
+        # Construct the API URL
+        url = 'https://api.fora.travel/v2/clients/'
+        
+        print(f"Making create client request to: {url}")
+        print(f"Client data: {json.dumps(client_data, indent=2)}")
+        print(f"Using auth headers: {headers}")
+        
+        response = requests.post(url, headers=headers, cookies=cookies, json=client_data, timeout=20)
+        response.raise_for_status()
+        
+        data = response.json()
+        print(f"/api/clients POST result: {json.dumps(data, indent=2)}")
+        return data
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code in [401, 403]:
+            # Try to refresh token and retry once
+            try:
+                print("Authentication failed, attempting token refresh...")
+                headers = auth_service.get_auth_headers(force_refresh=True)
+                response = requests.post(url, headers=headers, cookies=cookies, json=client_data, timeout=20)
+                response.raise_for_status()
+                return response.json()
+            except Exception as refresh_error:
+                print(f"Token refresh failed: {refresh_error}")
+                raise HTTPException(status_code=401, detail="Authentication failed. Please check your session cookie.")
+        else:
+            raise HTTPException(status_code=e.response.status_code, detail=f"API request failed: {e.response.reason}")
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create client: {e}")
+    except Exception as e:
+        print(f"Unexpected error in create_client: {e}")
+        raise HTTPException(status_code=500, detail="An internal server error occurred.")
+
+@app.post('/api/booking')
+async def create_booking(request: Request):
+    """
+    API endpoint to create a booking.
+    """
+    try:
+        # Get authentication headers with automatic token refresh
+        headers = auth_service.get_auth_headers()
+        cookies = auth_service.get_session_cookies()
+        
+        # Get request data
+        booking_data = await request.json()
+        
+        # Construct the API URL
+        url = 'https://api.fora.travel/v1/supplier/rate/'
+        
+        print(f"Making create booking request to: {url}")
+        print(f"Booking data: {json.dumps(booking_data, indent=2)}")
+        print(f"Using auth headers: {headers}")
+        
+        response = requests.post(url, headers=headers, cookies=cookies, json=booking_data, timeout=20)
+        response.raise_for_status()
+        
+        data = response.json()
+        print(f"/api/booking POST result: {json.dumps(data, indent=2)}")
+        return data
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code in [401, 403]:
+            # Try to refresh token and retry once
+            try:
+                print("Authentication failed, attempting token refresh...")
+                headers = auth_service.get_auth_headers(force_refresh=True)
+                response = requests.post(url, headers=headers, cookies=cookies, json=booking_data, timeout=20)
+                response.raise_for_status()
+                return response.json()
+            except Exception as refresh_error:
+                print(f"Token refresh failed: {refresh_error}")
+                raise HTTPException(status_code=401, detail="Authentication failed. Please check your session cookie.")
+        else:
+            raise HTTPException(status_code=e.response.status_code, detail=f"API request failed: {e.response.reason}")
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create booking: {e}")
+    except Exception as e:
+        print(f"Unexpected error in create_booking: {e}")
+        raise HTTPException(status_code=500, detail="An internal server error occurred.")
+
 @app.get("/")
 def read_root():
     return {"status": "FastAPI server is running."}

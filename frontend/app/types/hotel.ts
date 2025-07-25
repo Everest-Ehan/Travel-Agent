@@ -108,6 +108,10 @@ export interface HotelRate {
   id: string
   offer_id: string
   booking_code: string
+  cart_id?: string
+  cartId?: string // Alternative camelCase version
+  supplier_id?: string
+  supplierId?: string // Alternative camelCase version
   commission: {
     expected_commission_percent: number
     is_commissionable: boolean
