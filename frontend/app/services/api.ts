@@ -177,4 +177,120 @@ export class ApiService {
       throw error;
     }
   }
+
+  // Fetch clients
+  static async fetchClients(search: string = ''): Promise<any> {
+    const query = new URLSearchParams({
+      search: search,
+      limit: '1000',
+      booking_loyalty_programs: 'true'
+    }).toString();
+    const url = `${API_BASE_URL}/api/clients?${query}`;
+    
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'ngrok-skip-browser-warning': 'true',
+        },
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error fetching clients:', errorData);
+        throw new Error(errorData.detail || 'Failed to fetch clients');
+      }
+      
+      const data = await response.json();
+      console.log('Clients response:', data);
+      return data;
+    } catch (error) {
+      console.error('Error fetching clients:', error);
+      throw error;
+    }
+  }
+
+  // Create a new client
+  static async createClient(clientData: {
+    first_name: string
+    last_name: string
+    addresses: Array<{
+      label: string
+      country_id: string | null
+      country_name: string
+      state: string
+      city: string
+      address: string
+    }>
+    emails: Array<{ email: string; email_type: string }>
+    phone_numbers: Array<{ phone_number: string; number_type: string }>
+  }): Promise<any> {
+    const url = `${API_BASE_URL}/api/clients`;
+    
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        },
+        body: JSON.stringify(clientData),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error creating client:', errorData);
+        throw new Error(errorData.detail || 'Failed to create client');
+      }
+      
+      const data = await response.json();
+      console.log('Client created:', data);
+      return data;
+    } catch (error) {
+      console.error('Error creating client:', error);
+      throw error;
+    }
+  }
+
+  // Create a booking
+  static async createBooking(bookingData: {
+    booking_code: string
+    cart_id: string
+    children_ages: number[]
+    currency: string
+    end_date: string
+    expected_amount: number
+    expected_currency: string
+    number_of_adults: number
+    rate_code: string
+    rate_id: string
+    start_date: string
+    supplier_id: string
+    supplier_program_id: string
+  }): Promise<any> {
+    const url = `${API_BASE_URL}/api/booking`;
+    
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        },
+        body: JSON.stringify(bookingData),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error creating booking:', errorData);
+        throw new Error(errorData.detail || 'Failed to create booking');
+      }
+      
+      const data = await response.json();
+      console.log('Booking created:', data);
+      return data;
+    } catch (error) {
+      console.error('Error creating booking:', error);
+      throw error;
+    }
+  }
 } 

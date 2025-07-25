@@ -756,9 +756,9 @@ export default function HotelDetailsPage() {
                     const ratesCount = 'rates' in selectedProgram ? selectedProgram.rates?.length || 0 : 0;
                     
                     return (
-                      <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
+                    <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
                             {selectedProgram.typical_perks && (
                               <button 
                                 onClick={openPerksPopup}
@@ -767,9 +767,9 @@ export default function HotelDetailsPage() {
                                 See {(selectedProgram.name === 'Fora Reserve' ? 'Reserve' : selectedProgram.name)} perks
                               </button>
                             )}
-                          </div>
                         </div>
                       </div>
+                    </div>
                     );
                   })()}
                 </div>
@@ -824,42 +824,42 @@ export default function HotelDetailsPage() {
                             onClick={() => handleRateClick(rate, selectedProgram)}
                           >
                             <h4 className="font-semibold text-gray-900 mb-3 text-sm">{rate.room.description}</h4>
-                            <div className="flex items-center justify-between mb-3">
-                              <div>
-                                <div className="text-sm text-gray-600">Average per night</div>
+                          <div className="flex items-center justify-between mb-3">
+                            <div>
+                              <div className="text-sm text-gray-600">Average per night</div>
                                 <div className="text-lg font-bold text-gray-900">
                                   {formatCurrency(rate.price.avg_per_night.total, rate.price.avg_per_night.currency)}
                                 </div>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-sm text-gray-600">Total including taxes & fees</div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-sm text-gray-600">Total including taxes & fees</div>
                                 <div className="text-lg font-bold text-gray-900">
                                   {formatCurrency(totalPrice, rate.price.avg_per_night.currency)}
                                 </div>
-                              </div>
                             </div>
-                            <div className="flex items-center justify-between">
-                              <div className="flex gap-2">
-                                <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex gap-2">
+                              <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">
                                   {(selectedProgram.name === 'Fora Reserve' || !selectedProgram.name)
-                                    ? 'Reserve'
+                                  ? 'Reserve'
                                     : selectedProgram.name}
-                                </span>
-                                <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded">
+                              </span>
+                              <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded">
                                   {rate.price.payment_type_slug}
-                                </span>
+                              </span>
                                 <span className={`px-2 py-1 text-xs font-medium rounded ${
                                   isRefundable 
                                     ? 'bg-green-100 text-green-800' 
                                     : 'bg-red-100 text-red-800'
                                 }`}>
                                   {isRefundable ? 'Refundable' : 'Non-refundable'}
-                                </span>
-                              </div>
+                              </span>
+                            </div>
                               <div className="text-sm text-gray-600">
                                 Commission: {rate.commission.expected_commission_percent}%
-                              </div>
-                            </div>
+                          </div>
+                        </div>
                           </div>
                         )
                       })
@@ -947,6 +947,7 @@ export default function HotelDetailsPage() {
         selectedRate={selectedRate}
         program={selectedProgram}
         hotelName={hotel?.name || ''}
+        hotelId={hotelId}
         startDate={startDate}
         endDate={endDate}
         adults={adults}
