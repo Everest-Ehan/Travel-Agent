@@ -5,9 +5,13 @@ import { Hotel } from './types/hotel'
 import { ApiService } from './services/api'
 import { useRouter } from 'next/navigation'
 import HotelCard from './components/HotelCard'
+import { useAuth } from './contexts/AuthContext'
+import UserProfile from './components/auth/UserProfile'
+import EmailVerificationBanner from './components/auth/EmailVerificationBanner'
 
 export default function Home() {
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState('')
   const [hotels, setHotels] = useState<Hotel[]>([])
   const [loading, setLoading] = useState(false)
@@ -174,6 +178,9 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
+      {/* Email Verification Banner */}
+      <EmailVerificationBanner />
+      
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -185,7 +192,24 @@ export default function Home() {
               <a href="#" className="text-gray-500 hover:text-gray-900">Hotels</a>
               <a href="#" className="text-gray-500 hover:text-gray-900">Destinations</a>
               <a href="#" className="text-gray-500 hover:text-gray-900">About</a>
+              {user && (
+                <a href="/dashboard" className="text-gray-500 hover:text-gray-900">Dashboard</a>
+              )}
             </nav>
+            <div className="flex items-center space-x-4">
+              {authLoading ? (
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
+              ) : user ? (
+                <UserProfile />
+              ) : (
+                <a
+                  href="/auth"
+                  className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 transition-colors"
+                >
+                  Sign In
+                </a>
+              )}
+            </div>
           </div>
         </div>
       </header>
