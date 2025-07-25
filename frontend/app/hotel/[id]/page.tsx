@@ -496,7 +496,7 @@ export default function HotelDetailsPage() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                           <a href="#" className="text-primary-600 hover:text-primary-700 text-sm font-medium">
-                            See {hotel.programs[selectedProgramIndex].name} perks
+                            See {(hotel.programs[selectedProgramIndex].name === 'Fora Reserve' ? 'Reserve' : hotel.programs[selectedProgramIndex].name)} perks
                           </a>
                         </div>
 
