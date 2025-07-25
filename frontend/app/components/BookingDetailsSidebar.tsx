@@ -145,8 +145,6 @@ export default function BookingDetailsSidebar({
                 </div>
                 
                 <div className="text-sm text-gray-700">
-                  <p><strong>Rate Code:</strong> {selectedRate.rate_identifier}</p>
-                  <p><strong>Rate Description:</strong> {selectedRate.price.rate_description}</p>
                   <p><strong>Payment Type:</strong> {selectedRate.price.payment_type}</p>
                 </div>
               </div>
@@ -224,29 +222,6 @@ export default function BookingDetailsSidebar({
                   </span>
                 </div>
                 <p className="text-xs text-gray-500">Including all known taxes and fees</p>
-              </div>
-            </div>
-
-           
-
-           
-
-            {/* Additional Information */}
-            <div>
-              <h4 className="font-semibold text-gray-900 mb-3">Additional Information</h4>
-              <div className="space-y-3 text-sm">
-                <div>
-                  <span className="font-medium text-gray-700">Rate Code:</span>
-                  <p className="text-gray-600">{selectedRate.rate_identifier}</p>
-                </div>
-                <div>
-                  <span className="font-medium text-gray-700">Booking Code:</span>
-                  <p className="text-gray-600">{selectedRate.booking_code}</p>
-                </div>
-                <div>
-                  <span className="font-medium text-gray-700">Offer ID:</span>
-                  <p className="text-gray-600">{selectedRate.offer_id}</p>
-                </div>
               </div>
             </div>
           </div>
