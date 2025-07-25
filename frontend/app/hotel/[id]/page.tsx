@@ -289,22 +289,6 @@ export default function HotelDetailsPage() {
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-2">
-                    {hotel.labels && hotel.labels.length > 0 && (
-                      <div className="flex gap-2">
-                        {hotel.labels.map((label, index) => (
-                          <span
-                            key={index}
-                            className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                              label.slug === 'reserve' 
-                                ? 'bg-blue-100 text-blue-800' 
-                                : 'bg-green-100 text-green-800'
-                            }`}
-                          >
-                            {label.text}
-                          </span>
-                        ))}
-                      </div>
-                    )}
                     {hotel.average_review_rating && (
                       <div className="flex items-center gap-1">
                         <div className="flex text-yellow-400">
@@ -428,57 +412,83 @@ export default function HotelDetailsPage() {
                   </div>
 
                   {/* Rate Program Tabs */}
-                  <div className="flex gap-2 overflow-x-auto pb-2">
-                    {hotel.programs.map((program, index) => (
-                      <div
-                        key={program.id}
-                        onClick={() => setSelectedProgramIndex(index)}
-                        className={`flex-shrink-0 flex flex-col items-center p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                          index === selectedProgramIndex 
-                            ? 'border-primary-500 bg-primary-50' 
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 mb-2">
-                          {program.logo_url && (
-                            <img
-                              src={program.logo_url}
-                              alt={program.name}
-                              className="h-6 w-auto object-contain"
-                            />
-                          )}
-                          <span className={`text-sm font-semibold ${
-                            index === selectedProgramIndex ? 'text-primary-700' : 'text-gray-700'
-                          }`}>
-                            {program.name}
-                          </span>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-xs text-gray-500 mb-1">Rates from</div>
-                          <div className={`text-sm font-bold ${
-                            index === selectedProgramIndex ? 'text-primary-700' : 'text-gray-900'
-                          }`}>
-                            ${(() => {
-                              // Use different base rates for each program type based on commission
-                              const baseRate = 1200 // Base rate
-                              const commissionPercent = parseInt(program.commission.replace('%', ''))
-                              // Higher commission programs typically have higher rates
-                              const rateMultiplier = commissionPercent / 10
-                              const calculatedRate = Math.round(baseRate * rateMultiplier)
-                              return calculatedRate.toLocaleString()
-                            })()}
-                          </div>
-                          <div className="flex items-center gap-1 mt-1">
-                            <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
-                            </svg>
-                            <span className="text-xs text-gray-600">Perks</span>
-                            <span className="text-xs font-semibold text-green-600">{program.commission}</span>
-                          </div>
-                        </div>
+                  {(() => {
+                    // Find the index of Virtuoso in the programs array
+                    const virtuosoIndex = hotel.programs.findIndex(
+                      (program) => program.name === 'Virtuoso'
+                    );
+                    // If Virtuoso is present, show all programs up to and including Virtuoso
+                    // If not, show only the first program
+                    const displayPrograms =
+                      virtuosoIndex !== -1
+                        ? hotel.programs.slice(0, virtuosoIndex + 1)
+                        : hotel.programs.slice(0, 1);
+
+                    return (
+                      <div className="flex gap-2 overflow-x-auto pb-2">
+                        {displayPrograms.map((program, index) => {
+                          // The index here is relative to displayPrograms, so we need to map it to the original index for selection
+                          const originalIndex =
+                            virtuosoIndex !== -1 ? index : 0;
+                          return (
+                            <div
+                              key={program.id}
+                              onClick={() => setSelectedProgramIndex(
+                                virtuosoIndex !== -1 ? index : 0
+                              )}
+                              className={`flex-shrink-0 flex flex-col items-center p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                                originalIndex === selectedProgramIndex
+                                  ? 'border-primary-500 bg-primary-50'
+                                  : 'border-gray-200 hover:border-gray-300'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 mb-2">
+                                {program.name === 'Fora Reserve' ? (
+                                  <svg className="w-6 h-6 text-amber-500" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 2L9.19 8.63L2 9.24L7.46 13.97L5.82 21L12 17.27L18.18 21L16.54 13.97L22 9.24L14.81 8.63L12 2Z" />
+                                  </svg>
+                                ) : program.logo_url && (
+                                  <img
+                                    src={program.logo_url}
+                                    alt={program.name}
+                                    className="h-6 w-auto object-contain"
+                                  />
+                                )}
+                                <span className={`text-sm font-semibold ${
+                                  originalIndex === selectedProgramIndex ? 'text-primary-700' : 'text-gray-700'
+                                }`}>
+                                  {program.name === 'Fora Reserve' ? 'Reserve' : program.name}
+                                </span>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-xs text-gray-500 mb-1">Rates from</div>
+                                <div className={`text-sm font-bold ${
+                                  originalIndex === selectedProgramIndex ? 'text-primary-700' : 'text-gray-900'
+                                }`}>
+                                  ${(() => {
+                                    // Use different base rates for each program type based on commission
+                                    const baseRate = 1200 // Base rate
+                                    const commissionPercent = parseInt(program.commission.replace('%', ''))
+                                    // Higher commission programs typically have higher rates
+                                    const rateMultiplier = commissionPercent / 10
+                                    const calculatedRate = Math.round(baseRate * rateMultiplier)
+                                    return calculatedRate.toLocaleString()
+                                  })()}
+                                </div>
+                                <div className="flex items-center gap-1 mt-1">
+                                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                                  </svg>
+                                  <span className="text-xs text-gray-600">Perks</span>
+                                  <span className="text-xs font-semibold text-green-600">{program.commission}</span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })()}
 
                   {/* Selected Program Details */}
                   {hotel.programs[selectedProgramIndex] && (
