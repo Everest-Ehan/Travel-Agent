@@ -164,7 +164,11 @@ export default function BookingDetailsSidebar({
               <h4 className="font-semibold text-gray-900 mb-3">Rate Details</h4>
               <div className="bg-blue-50 rounded-lg p-4">
                 <div className="flex items-center gap-3 mb-3">
-                  {program.logo_url && (
+                  {program.name === 'Fora Reserve' ? (
+                    <svg className="w-8 h-8 text-amber-500" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2L9.19 8.63L2 9.24L7.46 13.97L5.82 21L12 17.27L18.18 21L16.54 13.97L22 9.24L14.81 8.63L12 2Z" />
+                    </svg>
+                  ) : program.logo_url && (
                     <img 
                       src={program.logo_url} 
                       alt={program.name}
@@ -172,8 +176,7 @@ export default function BookingDetailsSidebar({
                     />
                   )}
                   <div>
-                    <h5 className="font-semibold text-gray-900">{program.name}</h5>
-                    <p className="text-sm text-gray-600">Commission: {program.commission}</p>
+                    <h5 className="font-semibold text-gray-900">{program.name === 'Fora Reserve' ? 'Reserve' : program.name}</h5>
                   </div>
                 </div>
                 
@@ -260,48 +263,7 @@ export default function BookingDetailsSidebar({
               </div>
             </div>
 
-            {/* Commission Information */}
-            <div className="bg-blue-50 rounded-lg p-4">
-              <h4 className="font-semibold text-gray-900 mb-3">Your Estimated Commission</h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Commission Rate:</span>
-                  <span className="font-semibold text-gray-900">
-                    {selectedRate.commission.expected_commission_percent}%
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Commissionable Value:</span>
-                  <span className="font-semibold text-gray-900">
-                    {formatCurrency(commissionableValue, selectedRate.price.avg_per_night.currency)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Total Commission ({selectedRate.commission.expected_commission_percent}%):</span>
-                  <span className="font-semibold text-gray-900">
-                    {formatCurrency(totalCommission, selectedRate.price.avg_per_night.currency)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Your Commission (70%):</span>
-                  <span className="font-semibold text-gray-900">
-                    {formatCurrency(yourCommission, selectedRate.price.avg_per_night.currency)}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* How to Book */}
-            {program.how_to_book && (
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-3">How to Book</h4>
-                <div 
-                  className="text-sm text-gray-700 prose prose-sm max-w-none"
-                  dangerouslySetInnerHTML={{ __html: program.how_to_book }}
-                />
-              </div>
-            )}
-
+           
             {/* Additional Information */}
             <div>
               <h4 className="font-semibold text-gray-900 mb-3">Additional Information</h4>
