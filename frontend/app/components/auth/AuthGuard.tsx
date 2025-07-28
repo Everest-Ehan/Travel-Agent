@@ -30,7 +30,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
     }
 
     // If authenticated and on auth page, redirect to home
-    if (user && isPublicRoute) {
+    if (user && pathname.startsWith('/auth')) {
       router.push('/')
     }
   }, [user, loading, pathname, router])
