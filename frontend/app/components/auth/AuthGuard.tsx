@@ -10,7 +10,7 @@ interface AuthGuardProps {
 }
 
 // Routes that don't require authentication
-const PUBLIC_ROUTES = ['/auth', '/auth/callback', '/auth/reset-password']
+const PUBLIC_ROUTES = ['/auth', '/auth/callback', '/auth/reset-password', '/']
 
 export default function AuthGuard({ children }: AuthGuardProps) {
   const { user, loading } = useAuth()

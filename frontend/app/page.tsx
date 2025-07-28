@@ -8,6 +8,7 @@ import HotelCard from './components/HotelCard'
 import { useAuth } from './contexts/AuthContext'
 import UserProfile from './components/auth/UserProfile'
 import EmailVerificationBanner from './components/auth/EmailVerificationBanner'
+import SignUpPopup from './components/auth/SignUpPopup'
 
 export default function Home() {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function Home() {
   const [loadingRates, setLoadingRates] = useState<{ [key: string]: boolean }>({})
   const [loadingCard, setLoadingCard] = useState<string | null>(null)
   const [error, setError] = useState('')
+  const [showSignUpPopup, setShowSignUpPopup] = useState(false)
   
           // Search filters state
         const [filters, setFilters] = useState({
@@ -155,6 +157,13 @@ export default function Home() {
   }
 
   const handleCardClick = async (hotel: Hotel) => {
+    // Check if user is authenticated
+    if (!user) {
+      // Show signup popup instead of redirecting
+      setShowSignUpPopup(true);
+      return;
+    }
+    
     setLoadingCard(hotel.id)
     
     const hotelDetailsParams = {
@@ -513,6 +522,12 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* Sign Up Popup */}
+      <SignUpPopup 
+        isOpen={showSignUpPopup} 
+        onClose={() => setShowSignUpPopup(false)} 
+      />
     </div>
   )
 } 
