@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react'
 import { ApiService } from '../services/api'
-import { Client, ClientCard, CreateCardRequest } from '../types/auth'
+import { Client, ClientCard } from '../types/auth'
+import SeleniumCardForm from './SeleniumCardForm'
 
 interface ClientManagementProps {
   onClientSelect?: (client: Client) => void
@@ -17,21 +18,6 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
   const [error, setError] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [showAddCardForm, setShowAddCardForm] = useState(false)
-  const [newCard, setNewCard] = useState<CreateCardRequest>({
-    address: '',
-    address_additional: '',
-    card_logo: 'visa',
-    city: '',
-    country_id: 23, // Default to US
-    cvv: '',
-    expire_month: '',
-    expire_year: '',
-    holder_name: '',
-    number: '',
-    nickname: '',
-    state: '',
-    zip_code: ''
-  })
 
   useEffect(() => {
     fetchClients()
@@ -75,75 +61,7 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
     }
   }
 
-  const handleAddCard = async () => {
-    if (!selectedClient) return
 
-    try {
-      console.log('Original newCard data:', newCard)
-      
-      // Extract first 6 and last 4 digits from card number
-      const cardNumber = newCard.number.replace(/\s/g, '')
-      const first_6 = cardNumber.substring(0, 6)
-      const last_4 = cardNumber.substring(cardNumber.length - 4)
-      
-      console.log('Card number processing:', { cardNumber, first_6, last_4 })
-      
-      // Create number_token (this is a placeholder - Fora might generate this)
-      const number_token = `${first_6}AxLSmV${last_4}`
-      
-      // Create cvv_token by repeating cvv twice as specified
-      const cvv_token = newCard.cvv + newCard.cvv
-      
-      // Use card_logo as is (already in correct format)
-      const card_logo = newCard.card_logo
-      
-      const cardData = {
-        address: newCard.address,
-        address_additional: newCard.address_additional || null,
-        card_logo: card_logo,
-        city: newCard.city,
-        country_id: newCard.country_id,
-        cvv_token: cvv_token,
-        expire_month: newCard.expire_month,
-        expire_year: newCard.expire_year,
-        first_6: first_6,
-        holder_name: newCard.holder_name,
-        last_4: last_4,
-        nickname: newCard.nickname || null,
-        number_token: number_token,
-        state: newCard.state,
-        zip_code: newCard.zip_code
-      }
-
-      console.log('Transformed card data to send:', cardData)
-      const response = await ApiService.createClientCard(selectedClient.id, cardData)
-      console.log('Card created:', response)
-      
-      // Refresh cards
-      fetchClientCards(selectedClient.id)
-      
-      // Reset form
-      setNewCard({
-        address: '',
-        address_additional: '',
-        card_logo: 'visa',
-        city: '',
-        country_id: 23,
-        cvv: '',
-        expire_month: '',
-        expire_year: '',
-        holder_name: '',
-        number: '',
-        nickname: '',
-        state: '',
-        zip_code: ''
-      })
-      setShowAddCardForm(false)
-    } catch (err) {
-      console.error('Error in handleAddCard:', err)
-      setError(err instanceof Error ? err.message : 'Failed to add card')
-    }
-  }
 
   const handleDeleteCard = async (cardId: string) => {
     if (!selectedClient) return
@@ -322,146 +240,17 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
 
       {/* Add Card Modal */}
       {showAddCardForm && selectedClient && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Card</h3>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Card Number
-                </label>
-                <input
-                  type="text"
-                  value={newCard.number}
-                  onChange={(e) => setNewCard({ ...newCard, number: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="1234 5678 9012 3456"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Expiry Month
-                  </label>
-                  <input
-                    type="text"
-                    value={newCard.expire_month}
-                    onChange={(e) => setNewCard({ ...newCard, expire_month: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="12"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Expiry Year
-                  </label>
-                  <input
-                    type="text"
-                    value={newCard.expire_year}
-                    onChange={(e) => setNewCard({ ...newCard, expire_year: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="25"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  CVV
-                </label>
-                <input
-                  type="text"
-                  value={newCard.cvv}
-                  onChange={(e) => setNewCard({ ...newCard, cvv: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="123"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Cardholder Name
-                </label>
-                <input
-                  type="text"
-                  value={newCard.holder_name}
-                  onChange={(e) => setNewCard({ ...newCard, holder_name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="John Doe"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Address
-                </label>
-                <input
-                  type="text"
-                  value={newCard.address}
-                  onChange={(e) => setNewCard({ ...newCard, address: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="123 Main St"
-                />
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    City
-                  </label>
-                  <input
-                    type="text"
-                    value={newCard.city}
-                    onChange={(e) => setNewCard({ ...newCard, city: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="New York"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    State
-                  </label>
-                  <input
-                    type="text"
-                    value={newCard.state}
-                    onChange={(e) => setNewCard({ ...newCard, state: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="NY"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    ZIP
-                  </label>
-                  <input
-                    type="text"
-                    value={newCard.zip_code}
-                    onChange={(e) => setNewCard({ ...newCard, zip_code: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="10001"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={handleAddCard}
-                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-              >
-                Add Card
-              </button>
-              <button
-                onClick={() => setShowAddCardForm(false)}
-                className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
+        <SeleniumCardForm
+          checkoutUrl="https://advisor.fora.travel/partners/2ad941ab-6704-47f7-8601-a7241ea4202e/checkout/S1QAP7?start_date=2025-08-18&end_date=2025-08-27&adults=2&rate_code=API&rate_id=VIRTUOSO&expected_amount=13691.7&expected_currency=USD&supplier_type=hotels%2C2ad941ab-6704-47f7-8601-a7241ea4202e&description=Petit+Piton+600sf+Queen+Open+Wall+Piton+Views+Heated+Plunge+Pool+Fbfast+Airport+Transfer+Inc&detailsCategory=Virtuoso&method=ae9ce586-c659-4f07-992e-314fb091ab2c&currency=USD&cart_id=a4a1df9f-dad6-4a5b-9d40-b98c0e7c9600"
+          clientName={selectedClient.first_name + ' ' + selectedClient.last_name}
+          onCardCreated={() => {
+            setShowAddCardForm(false)
+            if (selectedClient) {
+              fetchClientCards(selectedClient.id)
+            }
+          }}
+          onCancel={() => setShowAddCardForm(false)}
+        />
       )}
     </div>
   )

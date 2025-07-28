@@ -412,4 +412,37 @@ export class ApiService {
       throw error;
     }
   }
+
+  // Create a card using Selenium automation
+  static async createCardWithSelenium(checkoutUrl: string, cardData: any, clientName: string = 'Testing 1'): Promise<any> {
+    const url = `${API_BASE_URL}/api/selenium/create-card`;
+    
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        },
+        body: JSON.stringify({
+          checkout_url: checkoutUrl,
+          card_data: cardData,
+          client_name: clientName
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error creating card with Selenium:', errorData);
+        throw new Error(errorData.detail || 'Failed to create card with Selenium');
+      }
+      
+      const data = await response.json();
+      console.log('Card created with Selenium:', data);
+      return data;
+    } catch (error) {
+      console.error('Error creating card with Selenium:', error);
+      throw error;
+    }
+  }
 } 

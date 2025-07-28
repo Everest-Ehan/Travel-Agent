@@ -1,4 +1,6 @@
 fastapi
 uvicorn[standard]
 requests
-python-dotenv 
+python-dotenv
+selenium
+webdriver-manager 

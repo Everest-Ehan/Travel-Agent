@@ -4,7 +4,11 @@ import json
 from fastapi import FastAPI, HTTPException, Query, Path
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Request
+from fastapi.responses import StreamingResponse
 from dotenv import load_dotenv
+import asyncio
+import json
+import time
 
 # Load environment variables from a .env file for security
 load_dotenv()
@@ -649,4 +653,116 @@ def auth_status():
         return {
             "status": "error",
             "message": str(e)
-        } 
+        }
+
+@app.post('/api/selenium/create-card')
+async def create_card_with_selenium(request: Request):
+    """
+    Create a card using Selenium automation with real-time progress updates.
+    """
+    try:
+        # Parse request data
+        data = await request.json()
+        checkout_url = data.get('checkout_url')
+        card_data = data.get('card_data', {})
+        client_name = data.get('client_name', 'Testing 1')
+        
+        if not checkout_url:
+            raise HTTPException(status_code=400, detail="checkout_url is required")
+            
+        # Import selenium service
+        from selenium_service import selenium_service
+        
+        # Create progress tracking function
+        progress_updates = []
+        
+        def progress_callback(message: str, percentage: int):
+            progress_updates.append({
+                "message": message,
+                "percentage": percentage,
+                "timestamp": time.time()
+            })
+        
+        # Set progress callback
+        selenium_service.set_progress_callback(progress_callback)
+        
+        # Run Selenium automation
+        result = await selenium_service.create_card_with_selenium(
+            checkout_url=checkout_url,
+            card_data=card_data,
+            client_name=client_name
+        )
+        
+        return {
+            "success": result["success"],
+            "message": result["message"],
+            "duration": result["duration"],
+            "progress_updates": progress_updates
+        }
+        
+    except Exception as e:
+        print(f"Error in Selenium card creation: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to create card with Selenium: {str(e)}")
+
+@app.get('/api/selenium/create-card/stream')
+async def create_card_with_selenium_stream(request: Request):
+    """
+    Create a card using Selenium automation with streaming progress updates.
+    """
+    try:
+        # Parse request data
+        data = await request.json()
+        checkout_url = data.get('checkout_url')
+        card_data = data.get('card_data', {})
+        client_name = data.get('client_name', 'Testing 1')
+        
+        if not checkout_url:
+            raise HTTPException(status_code=400, detail="checkout_url is required")
+            
+        # Import selenium service
+        from selenium_service import selenium_service
+        
+        async def generate_progress():
+            progress_updates = []
+            
+            def progress_callback(message: str, percentage: int):
+                progress_data = {
+                    "message": message,
+                    "percentage": percentage,
+                    "timestamp": time.time()
+                }
+                progress_updates.append(progress_data)
+                yield f"data: {json.dumps(progress_data)}\n\n"
+            
+            # Set progress callback
+            selenium_service.set_progress_callback(progress_callback)
+            
+            # Run Selenium automation
+            result = await selenium_service.create_card_with_selenium(
+                checkout_url=checkout_url,
+                card_data=card_data,
+                client_name=client_name
+            )
+            
+            # Send final result
+            final_data = {
+                "type": "result",
+                "success": result["success"],
+                "message": result["message"],
+                "duration": result["duration"]
+            }
+            yield f"data: {json.dumps(final_data)}\n\n"
+        
+        return StreamingResponse(
+            generate_progress(),
+            media_type="text/plain",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "Content-Type": "text/event-stream"
+            }
+        )
+        
+    except Exception as e:
+        print(f"Error in Selenium card creation: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to create card with Selenium: {str(e)}") 

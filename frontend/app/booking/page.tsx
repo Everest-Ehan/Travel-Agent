@@ -6,7 +6,7 @@ import { ApiService } from '../services/api'
 import { HotelRate, HotelRateProgram } from '../types/hotel'
 import { ClientCard } from '../types/auth'
 import ClientForm from '../components/ClientForm'
-import CardForm from '../components/CardForm'
+import SeleniumCardForm from '../components/SeleniumCardForm'
 
 interface Client {
   id: string
@@ -64,6 +64,8 @@ export default function BookingPage() {
   // State for client form
   const [showClientForm, setShowClientForm] = useState(false)
   const [clientSuccessMessage, setClientSuccessMessage] = useState('')
+  
+
 
   // Get booking data from URL params (minimal, as Fora does)
   const hotelId = searchParams.get('hotel_id') || ''
@@ -404,7 +406,7 @@ export default function BookingPage() {
                     <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
-                    Add New Card
+                    Add New Card (Selenium)
                   </button>
                 </div>
                 <div className="p-6">
@@ -567,8 +569,9 @@ export default function BookingPage() {
 
       {/* Card Form Modal */}
       {showAddCardForm && selectedClient && (
-        <CardForm
-          clientId={selectedClient.id}
+        <SeleniumCardForm
+          checkoutUrl={`https://advisor.fora.travel/partners/2ad941ab-6704-47f7-8601-a7241ea4202e/checkout/S1QAP7?start_date=${startDate}&end_date=${endDate}&adults=${adults}&rate_code=${rateCode}&rate_id=${rateId}&expected_amount=${expectedAmount}&expected_currency=${expectedCurrency}&supplier_type=hotels%2C${supplierId}&description=${encodeURIComponent(description)}&detailsCategory=Virtuoso&method=ae9ce586-c659-4f07-992e-314fb091ab2c&currency=${currency}&cart_id=${cartId}`}
+          clientName={selectedClient.first_name + ' ' + selectedClient.last_name}
           onCardCreated={handleCardCreated}
           onCancel={handleCancelCardForm}
         />
