@@ -1,11 +1,25 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import LoginForm from '../components/auth/LoginForm'
 import SignUpForm from '../components/auth/SignUpForm'
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true)
+  const [message, setMessage] = useState('')
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    const messageParam = searchParams.get('message')
+    if (messageParam) {
+      setMessage(messageParam)
+      // Auto-switch to signup if they need to create an account
+      if (messageParam.includes('sign up')) {
+        setIsLogin(false)
+      }
+    }
+  }, [searchParams])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -63,6 +77,24 @@ export default function AuthPage() {
 
       {/* Auth Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Message Display */}
+        {message && (
+          <div className="mb-8 max-w-2xl mx-auto">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-blue-800">{message}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-stretch">
           {/* Left Column - Auth Forms */}
           <div className="order-2 lg:order-1">
