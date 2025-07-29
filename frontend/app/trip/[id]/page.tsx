@@ -218,7 +218,7 @@ const TripDetailsPage: React.FC = () => {
     )
   }
 
-  const hasValidImage = trip.image && trip.image.length > 0 && trip.image[0].url
+  const hasValidImage = trip.image && trip.image.length > 0 && trip.image[0].public_id
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -254,23 +254,26 @@ const TripDetailsPage: React.FC = () => {
           {/* Main Content (Trip Overview, Bookings) */}
           <div className="lg:col-span-2 space-y-8">
             {/* Trip Overview */}
-            <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-6">
-              <div className="flex items-start space-x-6">
+            <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-8">
+              <div className="flex items-start space-x-8">
                 {hasValidImage ? (
-                  <div className="w-32 h-24 flex-shrink-0">
+                  <div className="w-48 h-36 flex-shrink-0">
                     <img
-                      src={trip.image[0].url}
+                      src={`https://media.fora.travel/foratravelportal/image/upload/c_fill,w_192,h_144,g_auto/f_auto/q_auto/v1/${trip.image[0].public_id}?_a=BAVAZGDW0`}
                       alt={trip.name}
-                      className="w-full h-full object-cover rounded-lg"
+                      className="w-full h-full object-cover rounded-xl shadow-md"
+                      onError={(e) => {
+                        e.currentTarget.src = '/placeholder-trip.jpg'
+                      }}
                     />
                   </div>
                 ) : (
-                  <div className="w-32 h-24 flex-shrink-0 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-lg flex items-center justify-center">
+                  <div className="w-48 h-36 flex-shrink-0 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-xl flex items-center justify-center shadow-md">
                     <div className="text-center">
-                      <svg className="w-8 h-8 text-indigo-400 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-12 h-12 text-indigo-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 4m0 13V4m-6 3l6-3" />
                       </svg>
-                      <p className="text-xs text-indigo-500 font-medium">Trip</p>
+                      <p className="text-sm text-indigo-500 font-medium">Trip</p>
                     </div>
                   </div>
                 )}

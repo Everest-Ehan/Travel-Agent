@@ -67,8 +67,8 @@ const TripCard: React.FC<TripCardProps> = ({ trip, onClick }) => {
     }
   }
 
-  // Check if we have a valid image URL (not just id and public_id)
-  const hasValidImage = trip.image && trip.image.length > 0 && trip.image[0].url
+  // Check if we have a valid image with public_id
+  const hasValidImage = trip.image && trip.image.length > 0 && trip.image[0].public_id
 
   // Get trip destination from name (remove email prefix if present)
   const getTripDestination = () => {
@@ -85,47 +85,52 @@ const TripCard: React.FC<TripCardProps> = ({ trip, onClick }) => {
       }`}
       onClick={onClick}
     >
-      <div className="flex h-32">
+      <div className="flex h-36">
         {/* Trip Image or Placeholder */}
         {hasValidImage ? (
-          <div className="w-40 h-32 flex-shrink-0">
+          <div className="w-48 h-36 flex-shrink-0">
             <img 
-              src={trip.image[0].url} 
+              src={`https://media.fora.travel/foratravelportal/image/upload/c_fill,w_192,h_144,g_auto/f_auto/q_auto/v1/${trip.image[0].public_id}?_a=BAVAZGDW0`}
               alt={trip.name}
               className="w-full h-full object-cover"
+              onError={(e) => {
+                e.currentTarget.src = '/placeholder-trip.jpg'
+              }}
             />
           </div>
         ) : (
-          <div className="w-40 h-32 flex-shrink-0 bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center">
+          <div className="w-48 h-36 flex-shrink-0 bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center">
             <div className="text-center">
-              <svg className="w-8 h-8 text-indigo-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-10 h-10 text-indigo-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 4m0 13V4m-6 3l6-3" />
               </svg>
-              <p className="text-xs text-indigo-500 font-medium">Trip</p>
+              <p className="text-sm text-indigo-500 font-medium">Trip</p>
             </div>
           </div>
         )}
 
         {/* Trip Details */}
-        <div className="flex-1 p-5">
-          <div className="flex items-start justify-between mb-3">
+        <div className="flex-1 p-6">
+          <div className="flex items-start justify-between mb-4">
             <div className="flex-1 min-w-0">
-              <h3 className="text-lg font-bold text-gray-900 truncate mb-2 leading-tight">
+              <h3 className="text-xl font-bold text-gray-900 truncate mb-3 leading-tight">
                 {getTripDestination()}
               </h3>
-              <div className="flex items-center space-x-4 text-sm text-gray-600">
-                <span className="flex items-center">
-                  <svg className="w-4 h-4 mr-1.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                <div className="flex items-center">
+                  <svg className="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
-                  {formatDate(trip.start_date)} - {formatDate(trip.end_date)}
-                </span>
-                <span className="flex items-center">
-                  <svg className="w-4 h-4 mr-1.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <span className="font-medium">Start:</span>
+                  <span className="ml-1">{formatDate(trip.start_date)}</span>
+                </div>
+                <div className="flex items-center">
+                  <svg className="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                   </svg>
-                  {trip.num_nights} nights
-                </span>
+                  <span className="font-medium">Duration:</span>
+                  <span className="ml-1">{trip.num_nights} nights</span>
+                </div>
               </div>
             </div>
 
