@@ -113,20 +113,32 @@ const TripDetailsPage: React.FC = () => {
   }
 
   const handleCancelBooking = (booking: any) => {
+    console.log('🔍 Cancel booking button clicked for booking:', booking)
     setSelectedBooking(booking)
     setCancelModalOpen(true)
+    console.log('✅ Modal state set - selectedBooking:', booking, 'cancelModalOpen:', true)
   }
 
   const handleConfirmCancel = async () => {
-    if (!selectedBooking) return
+    console.log('🔍 Confirm cancel called with selectedBooking:', selectedBooking)
+    if (!selectedBooking) {
+      console.log('❌ No selected booking to cancel')
+      return
+    }
 
     try {
+      console.log('🔄 Starting cancellation process for booking ID:', selectedBooking.unique_id)
       setCancellingBooking(true)
+      
+      console.log('📡 Calling API to cancel booking...')
       await ApiService.cancelBooking(selectedBooking.unique_id)
+      console.log('✅ Booking cancelled successfully via API')
       
       // Refresh trip data to reflect the cancellation
+      console.log('🔄 Refreshing trip data...')
       const updatedTrip = await ApiService.fetchTripDetails(tripId)
       setTrip(updatedTrip)
+      console.log('✅ Trip data refreshed')
       
       setCancelModalOpen(false)
       setSelectedBooking(null)
@@ -134,10 +146,11 @@ const TripDetailsPage: React.FC = () => {
       // Show success message (you could add a toast notification here)
       alert('Booking cancelled successfully!')
     } catch (error) {
-      console.error('Failed to cancel booking:', error)
+      console.error('❌ Failed to cancel booking:', error)
       alert('Failed to cancel booking. Please try again.')
     } finally {
       setCancellingBooking(false)
+      console.log('🔄 Cancellation process completed')
     }
   }
 
@@ -184,19 +197,6 @@ const TripDetailsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Cancel Booking Modal */}
-      {selectedBooking && (
-        <CancelBookingModal
-          isOpen={cancelModalOpen}
-          onClose={() => {
-            setCancelModalOpen(false)
-            setSelectedBooking(null)
-          }}
-          onConfirm={handleConfirmCancel}
-          booking={selectedBooking}
-          isLoading={cancellingBooking}
-        />
-      )}
     </div>
   )
 }
@@ -330,17 +330,15 @@ const TripDetailsPage: React.FC = () => {
 
                     {/* Action Buttons */}
                     <div className="flex justify-end mb-4">
-                      {booking.is_fully_cancellable && (
-                        <button
-                          onClick={() => handleCancelBooking(booking)}
-                          className="inline-flex items-center px-4 py-2 border border-red-200 text-red-700 bg-red-50 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium"
-                        >
-                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                          Cancel Booking
-                        </button>
-                      )}
+                      <button
+                        onClick={() => handleCancelBooking(booking)}
+                        className="inline-flex items-center px-4 py-2 border border-red-200 text-red-700 bg-red-50 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium"
+                      >
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        Cancel Booking
+                      </button>
                     </div>
 
                                          {/* Stay Details */}
@@ -486,6 +484,28 @@ const TripDetailsPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Cancel Booking Modal */}
+      {selectedBooking && (
+        <>
+          {console.log('🎭 Rendering CancelBookingModal with props:', {
+            isOpen: cancelModalOpen,
+            selectedBooking,
+            isLoading: cancellingBooking
+          })}
+          <CancelBookingModal
+            isOpen={cancelModalOpen}
+            onClose={() => {
+              console.log('🔒 Modal close triggered')
+              setCancelModalOpen(false)
+              setSelectedBooking(null)
+            }}
+            onConfirm={handleConfirmCancel}
+            booking={selectedBooking}
+            isLoading={cancellingBooking}
+          />
+        </>
+      )}
     </div>
   )
 }

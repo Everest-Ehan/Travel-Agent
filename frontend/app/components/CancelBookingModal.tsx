@@ -26,12 +26,21 @@ const CancelBookingModal: React.FC<CancelBookingModalProps> = ({
 }) => {
   const [isConfirming, setIsConfirming] = useState(false)
 
+  console.log('🔍 CancelBookingModal render - isOpen:', isOpen, 'booking:', booking)
+
   const handleConfirm = async () => {
+    console.log('🔍 CancelBookingModal handleConfirm called')
     setIsConfirming(true)
     try {
+      console.log('📞 Calling onConfirm...')
       await onConfirm()
+      console.log('✅ onConfirm completed successfully')
+    } catch (error) {
+      console.error('❌ onConfirm failed:', error)
+      throw error
     } finally {
       setIsConfirming(false)
+      console.log('🔄 handleConfirm completed')
     }
   }
 
