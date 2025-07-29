@@ -86,6 +86,16 @@ export default function BookingPage() {
   // State for booking
   const [bookingLoading, setBookingLoading] = useState(false)
   const [bookingError, setBookingError] = useState<string | null>(null)
+  
+  // State for trips
+  const [trips, setTrips] = useState<any[]>([])
+  const [loadingTrips, setLoadingTrips] = useState(false)
+  const [selectedTripType, setSelectedTripType] = useState<'new' | 'existing'>('new')
+  const [selectedTripId, setSelectedTripId] = useState<string | null>(null)
+  const [newTripName, setNewTripName] = useState('')
+  const [showTripModal, setShowTripModal] = useState(false)
+  const [tripSearchQuery, setTripSearchQuery] = useState('')
+  const [showPastTrips, setShowPastTrips] = useState(false)
 
   // Get booking data from URL params (minimal, as Fora does)
   const hotelId = searchParams.get('hotel_id') || ''
@@ -113,23 +123,50 @@ export default function BookingPage() {
   const hasCartId = !!cartId
   const hasSupplierId = !!supplierId
 
-  // Fetch client cards when user is available
+  // Fetch client cards and trips when user is available
   useEffect(() => {
     if (user) {
       // Use user's email to search for existing client or create a simple client object
       const userEmail = user.email
       if (userEmail) {
-              // The client name format is: userEmail + " client" (as per backend logic)
-      const clientName = `${userEmail} client`
+        // The client name format is: userEmail + " client" (as per backend logic)
+        const clientName = `${userEmail} client`
         
-        // Try to fetch cards for this user
+        // Try to fetch cards and trips for this user
         fetchClientCards(userClient?.id || user.id)
+        fetchTrips(userClient?.id || user.id)
       }
     } else {
       setClientCards([])
       setSelectedCard(null)
+      setTrips([])
     }
   }, [user])
+  
+  const fetchTrips = async (clientId: string) => {
+    try {
+      setLoadingTrips(true)
+      const data = await ApiService.fetchTrips(clientId)
+      const tripsData = data.results || []
+      setTrips(tripsData)
+      
+      // If there are existing trips, select the first active one by default
+      const activeTrip = tripsData.find((trip: any) => trip.status !== 'cancelled' && trip.status !== 'completed')
+      if (activeTrip) {
+        setSelectedTripType('existing')
+        setSelectedTripId(activeTrip.id)
+      } else if (tripsData.length > 0) {
+        // If no active trips, default to new trip
+        setSelectedTripType('new')
+        setSelectedTripId(null)
+      }
+    } catch (error) {
+      console.error('Error fetching trips:', error)
+      setTrips([])
+    } finally {
+      setLoadingTrips(false)
+    }
+  }
 
   const fetchClientCards = async (clientId: string) => {
     try {
@@ -337,8 +374,10 @@ export default function BookingPage() {
         start_date: startDate,
         supplier_id: supplierId,
         supplier_program_id: supplierProgramId,
-        trip_id: null,
-        trip_name: `${user!.email} client's ${hotelName} Trip`,
+        trip_id: selectedTripType === 'existing' ? selectedTripId : null,
+        trip_name: selectedTripType === 'existing' ? 
+          (trips.find(t => t.id === selectedTripId)?.name || `${user!.email} client's ${hotelName} Trip`) :
+          (newTripName || `${user!.email} client's ${hotelName} Trip`),
         use_advisor_contact_info: false,
         billing_address: billingAddress
       }
@@ -449,27 +488,137 @@ export default function BookingPage() {
           <p className="text-gray-600">Review your booking details and select a payment method</p>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Left Side - Client Info and Card Selection */}
+          {/* Left Side - Card Selection and Trip Selection */}
           <div className="space-y-6">
-            {/* Client Information (Read-only) */}
+
+
+            {/* Trip Selection */}
             <div className="bg-white rounded-xl shadow-lg border border-gray-200">
               <div className="p-6 border-b border-gray-200">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Booking For</h2>
-              </div>
-              <div className="p-6">
-                <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-medium text-gray-900">
-                        {user.email ? `${user.email} client` : 'User'}
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        {user.email}
-                      </p>
-                    </div>
-                    <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+                    Trip
+                    <svg className="w-4 h-4 ml-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                     </svg>
+                  </h2>
+                  <button 
+                    onClick={() => fetchTrips(userClient?.id || user!.id)}
+                    disabled={loadingTrips}
+                    className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                    title="Refresh trips"
+                  >
+                    <svg className={`w-5 h-5 ${loadingTrips ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div className="p-6 space-y-4">
+                {/* Create a new trip */}
+                <div className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                  selectedTripType === 'new' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                }`} onClick={() => setSelectedTripType('new')}>
+                  <div className="flex items-center space-x-4">
+                    <input
+                      type="radio"
+                      checked={selectedTripType === 'new'}
+                      onChange={() => setSelectedTripType('new')}
+                      className="w-4 h-4 text-blue-600"
+                    />
+                    <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
+                      <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-medium text-gray-900 truncate">
+                        {user?.email ? `${user.email} client` : 'User'}
+                      </h3>
+                      {selectedTripType === 'new' && (
+                        <input
+                          type="text"
+                          value={newTripName}
+                          onChange={(e) => setNewTripName(e.target.value)}
+                          placeholder="Enter trip name..."
+                          className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      )}
+                      <span className="inline-block mt-2 px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                        New
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Existing trip */}
+                <div className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                  selectedTripType === 'existing' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                }`} onClick={() => setSelectedTripType('existing')}>
+                  <div className="flex items-center space-x-4">
+                    <input
+                      type="radio"
+                      checked={selectedTripType === 'existing'}
+                      onChange={() => setSelectedTripType('existing')}
+                      className="w-4 h-4 text-blue-600"
+                    />
+                    {loadingTrips ? (
+                      <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                      </div>
+                    ) : trips.length > 0 ? (
+                      <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden">
+                        {trips[0]?.image && trips[0].image.length > 0 ? (
+                          <img 
+                            src={`https://api.fora.travel/v1/trips/${trips[0].id}/image`}
+                            alt="Trip"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = '/placeholder-trip.jpg'
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                            <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
+                        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <h3 className="font-medium text-gray-900 truncate">
+                        {user?.email ? `${user.email} client` : 'User'}
+                      </h3>
+                      {trips.length > 0 && (
+                        <>
+                          <p className="text-sm text-gray-600">{trips[0]?.name || 'Trip'}</p>
+                          <p className="text-sm text-gray-600">{trips[0]?.start_date && trips[0]?.end_date ? 
+                            `${new Date(trips[0].start_date).toLocaleDateString()} - ${new Date(trips[0].end_date).toLocaleDateString()}` : 
+                            'Dates not available'}</p>
+                        </>
+                      )}
+                      <span className="inline-block mt-2 px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                        Upcoming
+                      </span>
+                      {trips.length > 0 && (
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setShowTripModal(true)
+                          }}
+                          className="block mt-2 text-sm text-blue-600 hover:text-blue-800"
+                        >
+                          Select a different trip
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -479,7 +628,19 @@ export default function BookingPage() {
             {user && (
               <div className="bg-white rounded-xl shadow-lg border border-gray-200">
                 <div className="p-6 border-b border-gray-200">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Select Payment Card</h2>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-semibold text-gray-900">Select Payment Card</h2>
+                    <button 
+                      onClick={() => fetchClientCards(userClient?.id || user.id)}
+                      disabled={loadingCards}
+                      className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="Refresh cards"
+                    >
+                      <svg className={`w-5 h-5 ${loadingCards ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                    </button>
+                  </div>
                   <button 
                     onClick={handleAddCard}
                     className="w-full mb-4 bg-green-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-green-700 transition-colors text-sm"
@@ -740,6 +901,215 @@ export default function BookingPage() {
           cardInfo={selectedRevealedCard!.cardInfo}
           onClose={() => setShowRevealModal(false)}
         />
+      )}
+
+      {/* Trip Selection Modal */}
+      {showTripModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <button
+                onClick={() => setShowTripModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              <h3 className="text-xl font-semibold text-gray-900">Select trip</h3>
+              <div className="w-6"></div> {/* Spacer for centering */}
+            </div>
+            
+            {/* Search and Controls */}
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="flex-1 relative">
+                  <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  <input
+                    type="text"
+                    placeholder="Search"
+                    value={tripSearchQuery}
+                    onChange={(e) => setTripSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <button
+                  onClick={() => {
+                    setSelectedTripType('new')
+                    setSelectedTripId(null)
+                    setShowTripModal(false)
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                >
+                  + New trip
+                </button>
+              </div>
+              
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="showPastTrips"
+                  checked={showPastTrips}
+                  onChange={(e) => setShowPastTrips(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <label htmlFor="showPastTrips" className="ml-2 text-sm text-gray-700">
+                  Show past and canceled trips
+                </label>
+              </div>
+            </div>
+            
+            {/* Trip List */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {loadingTrips ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="text-gray-600 mt-2">Loading trips...</p>
+                </div>
+              ) : trips.length === 0 ? (
+                <div className="text-center py-8">
+                  <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                  <p className="text-gray-600 mb-4">No trips found</p>
+                  <button
+                    onClick={() => {
+                      setSelectedTripType('new')
+                      setShowTripModal(false)
+                    }}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Create New Trip
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {trips
+                    .filter(trip => {
+                      const matchesSearch = trip.name?.toLowerCase().includes(tripSearchQuery.toLowerCase()) ||
+                                           trip.client_name?.toLowerCase().includes(tripSearchQuery.toLowerCase())
+                      
+                      // Filter by status - show cancelled/past trips only if checkbox is checked
+                      if (!showPastTrips && (trip.status === 'cancelled' || trip.status === 'completed')) {
+                        return false
+                      }
+                      
+                      return matchesSearch
+                    })
+                    .map((trip) => {
+                      console.log('Trip data:', trip)
+                      console.log('Trip image:', trip.image)
+                      const startDate = trip.start_date ? new Date(trip.start_date) : null
+                      const endDate = trip.end_date ? new Date(trip.end_date) : null
+                      const nights = trip.num_nights || (startDate && endDate ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) : 0)
+                      
+                      return (
+                        <div
+                          key={trip.id}
+                          onClick={() => {
+                            setSelectedTripId(trip.id)
+                            setSelectedTripType('existing')
+                            setShowTripModal(false)
+                          }}
+                          className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                            selectedTripId === trip.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="flex items-start space-x-4">
+                            <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                              {trip.image && trip.image.length > 0 ? (
+                                <img 
+                                  src={`https://api.fora.travel/v1/trips/${trip.id}/image`}
+                                  alt="Trip"
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    console.log('Image failed to load:', e.currentTarget.src)
+                                    e.currentTarget.src = '/placeholder-trip.jpg'
+                                  }}
+                                  onLoad={() => {
+                                    console.log('Image loaded successfully for trip:', trip.id)
+                                  }}
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                  </svg>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-gray-900 text-lg mb-1">{trip.name || 'Trip'}</h4>
+                              <p className="text-sm text-gray-600 mb-2">{user?.email ? `${user.email} client` : 'User'}</p>
+                              <div className="flex items-center space-x-4 text-sm text-gray-600 mb-2">
+                                <span>
+                                  {startDate && endDate ? 
+                                    `${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : 
+                                    'Dates not available'}
+                                </span>
+                                <span>•</span>
+                                <span>{nights} nights</span>
+                              </div>
+                                                             <div className="flex items-center space-x-2 text-sm text-gray-600">
+                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z" />
+                                 </svg>
+                                 <span>{trip.booking_summary?.total || 0} bookings</span>
+                               </div>
+                            </div>
+                                                         <div className="flex flex-col items-end space-y-2">
+                               <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
+                                 trip.status === 'cancelled' 
+                                   ? 'bg-red-100 text-red-800' 
+                                   : trip.status === 'completed'
+                                   ? 'bg-gray-100 text-gray-800'
+                                   : 'bg-blue-100 text-blue-800'
+                               }`}>
+                                 {trip.status === 'cancelled' ? 'Cancelled' : 
+                                  trip.status === 'completed' ? 'Completed' : 
+                                  'Upcoming'}
+                               </span>
+                              {selectedTripId === trip.id && (
+                                <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                </div>
+              )}
+            </div>
+            
+            {/* Footer */}
+            <div className="p-6 border-t border-gray-200 flex justify-end space-x-3">
+              <button
+                onClick={() => setShowTripModal(false)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (selectedTripId) {
+                    setSelectedTripType('existing')
+                    setShowTripModal(false)
+                  }
+                }}
+                disabled={!selectedTripId}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Select trip
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
