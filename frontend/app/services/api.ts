@@ -404,16 +404,33 @@ export class ApiService {
     booking_code: string
     cart_id: string
     children_ages: number[]
+    client_card_id: string
+    client_id: string
+    client_loyalty_program_id: string | null
     currency: string
+    deposits: any[]
     end_date: string
     expected_amount: number
     expected_currency: string
     number_of_adults: number
+    program_id: string
     rate_code: string
     rate_id: string
+    room_description: string
     start_date: string
     supplier_id: string
     supplier_program_id: string
+    trip_id: string | null
+    trip_name: string
+    use_advisor_contact_info: boolean
+    billing_address?: {
+      address_1: string
+      address_2?: string
+      postal_code: string
+      city: string
+      state: string
+      country: string
+    }
   }): Promise<any> {
     const url = `${API_BASE_URL}/api/booking`;
     

@@ -3,6 +3,11 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
+console.log('🔧 Supabase config:', { 
+  url: supabaseUrl ? 'configured' : 'missing', 
+  key: supabaseAnonKey ? 'configured' : 'missing' 
+})
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Auth helper functions
@@ -41,8 +46,30 @@ export const auth = {
 
   // Sign out
   signOut: async () => {
-    const { error } = await supabase.auth.signOut()
-    return { error }
+    console.log('🔐 Calling supabase.auth.signOut()...')
+    try {
+      const { error } = await supabase.auth.signOut()
+      console.log('🔐 Supabase signOut response:', { error })
+      
+      // Force clear local session if there's an error
+      if (error) {
+        console.warn('🔐 Sign out error, clearing local storage:', error)
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('sb-' + supabaseUrl.split('//')[1].split('.')[0] + '-auth-token')
+          sessionStorage.clear()
+        }
+      }
+      
+      return { error }
+    } catch (err) {
+      console.error('🔐 Sign out exception:', err)
+      // Force clear local storage on exception
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('sb-' + supabaseUrl.split('//')[1].split('.')[0] + '-auth-token')
+        sessionStorage.clear()
+      }
+      return { error: err }
+    }
   },
 
   // Get current user
@@ -87,6 +114,27 @@ export const auth = {
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/auth/reset-password`
     })
+    return { data, error }
+  },
+
+  // Get user's client ID from user_clients table
+  getUserClientId: async (userId: string) => {
+    const { data, error } = await supabase
+      .from('user_clients')
+      .select('client_id')
+      .eq('user_id', userId)
+      .single()
+    return { data, error }
+  },
+
+  // Store user's client ID in user_clients table
+  storeUserClientId: async (userId: string, clientId: string) => {
+    const { data, error } = await supabase
+      .from('user_clients')
+      .upsert({ 
+        user_id: userId, 
+        client_id: clientId 
+      })
     return { data, error }
   }
 } 
