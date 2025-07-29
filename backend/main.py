@@ -1336,3 +1336,67 @@ async def create_card_with_selenium_stream(request: Request):
     except Exception as e:
         print(f"Error in Selenium card creation: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to create card with Selenium: {str(e)}") 
+
+def cancel_booking_data(unique_id: str):
+    """
+    Calls the real Fora Travel API to cancel a booking.
+    """
+    try:
+        # Get authentication headers with automatic token refresh
+        headers = auth_service.get_auth_headers()
+        cookies = auth_service.get_session_cookies()
+
+        # Construct the API URL for booking cancellation
+        api_url = f"https://api.fora.travel/v1/bookings/{unique_id}/report/canceled/"
+
+        # Request payload
+        payload = {
+            "report_as_canceled": False,
+            "cancellation_reason": "client",
+            "cancellation_reason_detail": "client-entire-trip-canceled"
+        }
+
+        print(f"Making booking cancellation request to: {api_url}")
+        print(f"Using auth headers: {headers}")
+        print(f"Payload: {payload}")
+
+        response = requests.post(api_url, headers=headers, cookies=cookies, json=payload, timeout=20)
+        response.raise_for_status()  # Raise an exception for bad status codes (4xx or 5xx)
+        return {"success": True, "message": "Booking cancelled successfully"}
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code in [401, 403]:
+            # Try to refresh token and retry once
+            try:
+                print("Authentication failed, attempting token refresh...")
+                headers = auth_service.get_auth_headers(force_refresh=True)
+                response = requests.post(api_url, headers=headers, cookies=cookies, json=payload, timeout=20)
+                response.raise_for_status()
+                return {"success": True, "message": "Booking cancelled successfully"}
+            except Exception as refresh_error:
+                print(f"Token refresh failed: {refresh_error}")
+                raise HTTPException(status_code=401, detail="Authentication failed. Please check your session cookie.")
+        else:
+            raise HTTPException(status_code=e.response.status_code, detail=f"API request failed: {e.response.reason}")
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"A network error occurred: {e}")
+    except Exception as e:
+        print(f"Unexpected error in cancel_booking_data: {e}")
+        raise HTTPException(status_code=500, detail="An internal server error occurred.")
+
+
+@app.post("/api/bookings/{unique_id}/cancel")
+async def cancel_booking(unique_id: str = Path(..., description="The booking unique ID to cancel.")):
+    """
+    API endpoint to cancel a specific booking.
+    """
+    print(f"Received booking cancellation request for booking: '{unique_id}'")
+    try:
+        data = cancel_booking_data(unique_id)
+        print(f"/api/bookings/{unique_id}/cancel result: {json.dumps(data, indent=2)}")
+        return data
+    except HTTPException as e:
+        # Re-raise HTTPException to let FastAPI handle the response
+        raise e
+    except Exception as e:
+        print(f"Error in /api/bookings/{unique_id}/cancel: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) 

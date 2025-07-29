@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { DetailedTrip } from '../../types/trip'
 import { ApiService } from '../../services/api'
 import { useAuth } from '../../contexts/AuthContext'
+import CancelBookingModal from '../../components/CancelBookingModal'
 
 const TripDetailsPage: React.FC = () => {
   const params = useParams()
@@ -15,6 +16,9 @@ const TripDetailsPage: React.FC = () => {
   const [trip, setTrip] = useState<DetailedTrip | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [cancelModalOpen, setCancelModalOpen] = useState(false)
+  const [selectedBooking, setSelectedBooking] = useState<any>(null)
+  const [cancellingBooking, setCancellingBooking] = useState(false)
 
   useEffect(() => {
     if (!user || !tripId) return
@@ -108,6 +112,35 @@ const TripDetailsPage: React.FC = () => {
     return match ? match[1] : name
   }
 
+  const handleCancelBooking = (booking: any) => {
+    setSelectedBooking(booking)
+    setCancelModalOpen(true)
+  }
+
+  const handleConfirmCancel = async () => {
+    if (!selectedBooking) return
+
+    try {
+      setCancellingBooking(true)
+      await ApiService.cancelBooking(selectedBooking.unique_id)
+      
+      // Refresh trip data to reflect the cancellation
+      const updatedTrip = await ApiService.fetchTripDetails(tripId)
+      setTrip(updatedTrip)
+      
+      setCancelModalOpen(false)
+      setSelectedBooking(null)
+      
+      // Show success message (you could add a toast notification here)
+      alert('Booking cancelled successfully!')
+    } catch (error) {
+      console.error('Failed to cancel booking:', error)
+      alert('Failed to cancel booking. Please try again.')
+    } finally {
+      setCancellingBooking(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -147,12 +180,26 @@ const TripDetailsPage: React.FC = () => {
               >
                 Try Again
               </button>
-            </div>
-          </div>
+                      </div>
         </div>
       </div>
-    )
-  }
+
+      {/* Cancel Booking Modal */}
+      {selectedBooking && (
+        <CancelBookingModal
+          isOpen={cancelModalOpen}
+          onClose={() => {
+            setCancelModalOpen(false)
+            setSelectedBooking(null)
+          }}
+          onConfirm={handleConfirmCancel}
+          booking={selectedBooking}
+          isLoading={cancellingBooking}
+        />
+      )}
+    </div>
+  )
+}
 
   if (!trip) {
     return (
@@ -264,22 +311,37 @@ const TripDetailsPage: React.FC = () => {
                 <h3 className="text-xl font-bold text-gray-900">Bookings</h3>
                 {trip.bookings.map((booking: any, index: number) => (
                   <div key={booking.unique_id} className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-                                         <div className="flex items-start justify-between mb-4">
-                       <div>
-                         <h4 className="text-lg font-semibold text-gray-900 mb-1">
-                           {typeof booking.supplier === 'string' ? booking.supplier : 'Unknown Supplier'}
-                         </h4>
-                         <p className="text-sm text-gray-600">
-                           {typeof booking.category === 'string' ? booking.category : 'No Category'} • {typeof booking.confirmation_num === 'string' ? booking.confirmation_num : 'No confirmation'}
-                         </p>
-                       </div>
-                       <div className="text-right">
-                         <p className="text-lg font-bold text-gray-900">
-                           {formatCurrency(booking.total_commissionable_booking_usd)}
-                         </p>
-                         <p className="text-sm text-gray-600">{typeof booking.status === 'string' ? booking.status : 'Unknown'}</p>
-                       </div>
-                     </div>
+                                                             <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-900 mb-1">
+                          {typeof booking.supplier === 'string' ? booking.supplier : 'Unknown Supplier'}
+                        </h4>
+                        <p className="text-sm text-gray-600">
+                          {typeof booking.category === 'string' ? booking.category : 'No Category'} • {typeof booking.confirmation_num === 'string' ? booking.confirmation_num : 'No confirmation'}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-bold text-gray-900">
+                          {formatCurrency(booking.total_commissionable_booking_usd)}
+                        </p>
+                        <p className="text-sm text-gray-600">{typeof booking.status === 'string' ? booking.status : 'Unknown'}</p>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex justify-end mb-4">
+                      {booking.is_fully_cancellable && (
+                        <button
+                          onClick={() => handleCancelBooking(booking)}
+                          className="inline-flex items-center px-4 py-2 border border-red-200 text-red-700 bg-red-50 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium"
+                        >
+                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                          Cancel Booking
+                        </button>
+                      )}
+                    </div>
 
                                          {/* Stay Details */}
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">

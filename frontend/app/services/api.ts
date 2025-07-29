@@ -518,28 +518,56 @@ export class ApiService {
     }
   }
 
-  // Fetch detailed trip information
+    // Fetch detailed trip information
   static async fetchTripDetails(tripId: string): Promise<any> {
     const url = `${API_BASE_URL}/api/trips/${encodeURIComponent(tripId)}`;
-    
+
     try {
       const response = await fetch(url, {
         headers: {
           'ngrok-skip-browser-warning': 'true',
         },
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         console.error('Error fetching trip details:', errorData);
         throw new Error(errorData.detail || 'Failed to fetch trip details');
       }
-      
+
       const data = await response.json();
       console.log('Trip details response:', data);
       return data;
     } catch (error) {
       console.error('Error fetching trip details:', error);
+      throw error;
+    }
+  }
+
+  // Cancel a booking
+  static async cancelBooking(uniqueId: string): Promise<any> {
+    const url = `${API_BASE_URL}/api/bookings/${encodeURIComponent(uniqueId)}/cancel`;
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'ngrok-skip-browser-warning': 'true',
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error cancelling booking:', errorData);
+        throw new Error(errorData.detail || 'Failed to cancel booking');
+      }
+
+      const data = await response.json();
+      console.log('Cancel booking response:', data);
+      return data;
+    } catch (error) {
+      console.error('Error cancelling booking:', error);
       throw error;
     }
   }
