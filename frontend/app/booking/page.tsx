@@ -7,6 +7,7 @@ import { HotelRate, HotelRateProgram } from '../types/hotel'
 import { ClientCard } from '../types/auth'
 import ClientForm from '../components/ClientForm'
 import SeleniumCardForm from '../components/SeleniumCardForm'
+import CardRevealModal from '../components/CardRevealModal'
 
 interface Client {
   id: string
@@ -56,6 +57,14 @@ export default function BookingPage() {
   const [loadingCards, setLoadingCards] = useState(false)
   const [selectedCard, setSelectedCard] = useState<ClientCard | null>(null)
   const [showAddCardForm, setShowAddCardForm] = useState(false)
+  
+  // State for card reveal functionality
+  const [revealedCards, setRevealedCards] = useState<{ [cardId: string]: any }>({})
+  const [revealingCard, setRevealingCard] = useState<string | null>(null)
+  
+  // State for modal
+  const [showRevealModal, setShowRevealModal] = useState(false)
+  const [selectedRevealedCard, setSelectedRevealedCard] = useState<{ cardData: any; cardInfo: any } | null>(null)
   
   // State for booking
   const [bookingLoading, setBookingLoading] = useState(false)
@@ -176,6 +185,94 @@ export default function BookingPage() {
 
   const handleCancelCardForm = () => {
     setShowAddCardForm(false)
+  }
+
+  const handleRevealCard = async (cardId: string, event: React.MouseEvent) => {
+    event.stopPropagation() // Prevent card selection when clicking reveal button
+    
+    if (!selectedClient) {
+      console.error('No client selected')
+      return
+    }
+
+    // If already revealed, show the modal with existing data
+    if (revealedCards[cardId]) {
+      const card = clientCards.find(c => c.id === cardId)
+      if (card) {
+        console.log('Opening modal with existing data:', { cardData: revealedCards[cardId], cardInfo: card })
+        setSelectedRevealedCard({
+          cardData: revealedCards[cardId],
+          cardInfo: card
+        })
+        setShowRevealModal(true)
+      }
+      return
+    }
+
+    try {
+      setRevealingCard(cardId)
+      console.log('🔍 Revealing card:', cardId, 'for client:', selectedClient.id)
+      
+      const revealedData = await ApiService.revealClientCard(selectedClient.id, cardId)
+      console.log('✅ Card revealed:', revealedData)
+      
+      setRevealedCards(prev => ({
+        ...prev,
+        [cardId]: revealedData
+      }))
+      
+      // Show the modal with the revealed data
+      const card = clientCards.find(c => c.id === cardId)
+      if (card) {
+        console.log('Opening modal with new data:', { cardData: revealedData, cardInfo: card })
+        setSelectedRevealedCard({
+          cardData: revealedData,
+          cardInfo: card
+        })
+        setShowRevealModal(true)
+      }
+      
+      // Show success message (you could integrate with a toast library)
+      console.log('Card information revealed successfully!')
+    } catch (error) {
+      console.error('❌ Error revealing card:', error)
+      // Show error message to user
+      const errorMessage = error instanceof Error ? error.message : 'Failed to reveal card information'
+      console.error('Error:', errorMessage)
+      // You could add a toast notification here or show an alert
+      alert(`Error: ${errorMessage}`)
+    } finally {
+      setRevealingCard(null)
+    }
+  }
+
+  const handleTestModal = () => {
+    console.log('Testing modal...')
+    setSelectedRevealedCard({
+      cardData: {
+        card_data: {
+          first_6: '555671',
+          last_4: '4892',
+          expire_month: 12,
+          expire_year: 2029,
+          card_logo: 'masterCard',
+          address: '16075 Surprise Ln',
+          address_additional: 'Apt 1',
+          city: 'Huntington Beach',
+          state: 'CA',
+          zip_code: '92649',
+          country_name: 'United States of America'
+        }
+      },
+      cardInfo: {
+        holder_name: 'Sathvik Nori',
+        last_4: '4892',
+        expire_month: '12',
+        expire_year: '2029',
+        card_logo: 'masterCard'
+      }
+    })
+    setShowRevealModal(true)
   }
 
   const getCardLogo = (cardLogo: string) => {
@@ -443,7 +540,7 @@ export default function BookingPage() {
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-3">
                               <span className="text-2xl">{getCardLogo(card.card_logo)}</span>
-                              <div>
+                              <div className="flex-1">
                                 <h3 className="font-medium text-gray-900">
                                   {card.holder_name}
                                 </h3>
@@ -455,11 +552,41 @@ export default function BookingPage() {
                                 </p>
                               </div>
                             </div>
-                            {selectedCard?.id === card.id && (
-                              <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                            )}
+                            <div className="flex items-center space-x-2">
+                              {/* Reveal button */}
+                              <button
+                                onClick={(e) => handleRevealCard(card.id, e)}
+                                disabled={revealingCard === card.id}
+                                className={`px-3 py-1 text-xs rounded-md transition-colors ${
+                                  revealedCards[card.id]
+                                    ? 'bg-green-100 hover:bg-green-200 text-green-700'
+                                    : revealingCard === card.id
+                                    ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                                    : 'bg-blue-100 hover:bg-blue-200 text-blue-700'
+                                }`}
+                              >
+                                {revealingCard === card.id ? (
+                                  <div className="flex items-center space-x-1">
+                                    <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span>Revealing...</span>
+                                  </div>
+                                ) : revealedCards[card.id] ? (
+                                  <span>👁️ View</span>
+                                ) : (
+                                  <span>🔓 Reveal</span>
+                                )}
+                              </button>
+                              
+                              {/* Selection indicator */}
+                              {selectedCard?.id === card.id && (
+                                <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              )}
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -527,10 +654,18 @@ export default function BookingPage() {
               </div>
               {/* Error Message */}
               {bookingError && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <p className="text-red-800 text-sm">{bookingError}</p>
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-700">{bookingError}</p>
                 </div>
               )}
+
+              {/* Test Modal Button */}
+              <button
+                onClick={handleTestModal}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+              >
+                Test Modal
+              </button>
               {/* Action Buttons */}
               <div className="flex gap-4 pt-4">
                 <button
@@ -574,6 +709,16 @@ export default function BookingPage() {
           clientName={selectedClient.first_name + ' ' + selectedClient.last_name}
           onCardCreated={handleCardCreated}
           onCancel={handleCancelCardForm}
+        />
+      )}
+
+      {/* Card Reveal Modal */}
+      {showRevealModal && selectedRevealedCard && (
+        <CardRevealModal
+          isOpen={showRevealModal}
+          cardData={selectedRevealedCard.cardData}
+          cardInfo={selectedRevealedCard.cardInfo}
+          onClose={() => setShowRevealModal(false)}
         />
       )}
     </div>

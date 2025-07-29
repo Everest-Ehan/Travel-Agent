@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { ApiService } from '../services/api'
 import { Client, ClientCard } from '../types/auth'
 import SeleniumCardForm from './SeleniumCardForm'
+import CardRevealModal from './CardRevealModal'
 
 interface ClientManagementProps {
   onClientSelect?: (client: Client) => void
@@ -18,6 +19,14 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
   const [error, setError] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [showAddCardForm, setShowAddCardForm] = useState(false)
+  
+  // State for card reveal functionality
+  const [revealedCards, setRevealedCards] = useState<{ [cardId: string]: any }>({})
+  const [revealingCard, setRevealingCard] = useState<string | null>(null)
+  
+  // State for modal
+  const [showRevealModal, setShowRevealModal] = useState(false)
+  const [selectedRevealedCard, setSelectedRevealedCard] = useState<{ cardData: any; cardInfo: any } | null>(null)
 
   useEffect(() => {
     fetchClients()
@@ -73,6 +82,60 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to delete card')
       }
+    }
+  }
+
+  const handleRevealCard = async (cardId: string) => {
+    if (!selectedClient) {
+      console.error('No client selected')
+      return
+    }
+
+    // If already revealed, show the modal with existing data
+    if (revealedCards[cardId]) {
+      const card = clientCards.find(c => c.id === cardId)
+      if (card) {
+        setSelectedRevealedCard({
+          cardData: revealedCards[cardId],
+          cardInfo: card
+        })
+        setShowRevealModal(true)
+      }
+      return
+    }
+
+    try {
+      setRevealingCard(cardId)
+      console.log('🔍 Revealing card:', cardId, 'for client:', selectedClient.id)
+      
+      const revealedData = await ApiService.revealClientCard(selectedClient.id, cardId)
+      console.log('✅ Card revealed:', revealedData)
+      
+      setRevealedCards(prev => ({
+        ...prev,
+        [cardId]: revealedData
+      }))
+      
+      // Show the modal with the revealed data
+      const card = clientCards.find(c => c.id === cardId)
+      if (card) {
+        setSelectedRevealedCard({
+          cardData: revealedData,
+          cardInfo: card
+        })
+        setShowRevealModal(true)
+      }
+      
+      // Show success message
+      console.log('Card information revealed successfully!')
+    } catch (error) {
+      console.error('❌ Error revealing card:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to reveal card information'
+      setError(errorMessage)
+      // You could add a toast notification here
+      alert(`Error: ${errorMessage}`)
+    } finally {
+      setRevealingCard(null)
     }
   }
 
@@ -207,7 +270,7 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <span className="text-2xl">{getCardLogo(card.card_logo)}</span>
-                        <div>
+                        <div className="flex-1">
                           <h4 className="font-medium text-gray-900">
                             {card.holder_name}
                           </h4>
@@ -219,12 +282,42 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
                           </p>
                         </div>
                       </div>
-                      <button
-                        onClick={() => handleDeleteCard(card.id)}
-                        className="text-red-600 hover:text-red-800 text-sm"
-                      >
-                        Delete
-                      </button>
+                      <div className="flex items-center space-x-2">
+                        {/* Reveal button */}
+                        <button
+                          onClick={() => handleRevealCard(card.id)}
+                          disabled={revealingCard === card.id}
+                          className={`px-3 py-1 text-xs rounded-md transition-colors ${
+                            revealedCards[card.id]
+                              ? 'bg-green-100 hover:bg-green-200 text-green-700'
+                              : revealingCard === card.id
+                              ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                              : 'bg-blue-100 hover:bg-blue-200 text-blue-700'
+                          }`}
+                        >
+                          {revealingCard === card.id ? (
+                            <div className="flex items-center space-x-1">
+                              <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              <span>Revealing...</span>
+                            </div>
+                          ) : revealedCards[card.id] ? (
+                            <span>👁️ View</span>
+                          ) : (
+                            <span>🔓 Reveal</span>
+                          )}
+                        </button>
+                        
+                        {/* Delete button */}
+                        <button
+                          onClick={() => handleDeleteCard(card.id)}
+                          className="text-red-600 hover:text-red-800 text-sm"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
                     <div className="mt-3 text-xs text-gray-500">
                       <p>{card.address}</p>
@@ -250,6 +343,16 @@ export default function ClientManagement({ onClientSelect }: ClientManagementPro
             }
           }}
           onCancel={() => setShowAddCardForm(false)}
+        />
+      )}
+
+      {/* Card Reveal Modal */}
+      {showRevealModal && selectedRevealedCard && (
+        <CardRevealModal
+          isOpen={showRevealModal}
+          cardData={selectedRevealedCard.cardData}
+          cardInfo={selectedRevealedCard.cardInfo}
+          onClose={() => setShowRevealModal(false)}
         />
       )}
     </div>

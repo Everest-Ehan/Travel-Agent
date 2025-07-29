@@ -426,7 +426,7 @@ async def create_booking(request: Request):
         booking_data = await request.json()
         
         # Construct the API URL
-        url = 'https://api.fora.travel/v1/supplier/rate/'
+        url = ''#'https://api.fora.travel/v1/supplier/rate/'
         
         print(f"Making create booking request to: {url}")
         print(f"Booking data: {json.dumps(booking_data, indent=2)}")
@@ -601,6 +601,50 @@ def delete_client_card(client_id: str = Path(...), card_id: str = Path(...)):
         raise HTTPException(status_code=500, detail=f"Failed to delete client card: {e}")
     except Exception as e:
         print(f"Unexpected error in delete_client_card: {e}")
+        raise HTTPException(status_code=500, detail="An internal server error occurred.")
+
+@app.get('/api/clients/{client_id}/cards/{card_id}/reveal')
+def reveal_client_card(client_id: str = Path(...), card_id: str = Path(...)):
+    """
+    Reveal card information using the Fora Travel API
+    """
+    try:
+        # Get authentication headers with automatic token refresh
+        headers = auth_service.get_auth_headers()
+        cookies = auth_service.get_session_cookies()
+        
+        # Construct the API URL for revealing card information
+        api_url = f"https://api.fora.travel/v1/clients/{client_id}/cards/{card_id}/reveal/"
+        
+        print(f"Making card reveal request to: {api_url}")
+        print(f"Using auth headers: {headers}")
+        
+        response = requests.get(api_url, headers=headers, cookies=cookies, timeout=20)
+        response.raise_for_status()
+        
+        card_data = response.json()
+        print(f"Card reveal response: {json.dumps(card_data, indent=2)}")
+        
+        return card_data
+        
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code in [401, 403]:
+            # Try to refresh token and retry once
+            try:
+                print("Authentication failed, attempting token refresh...")
+                headers = auth_service.get_auth_headers(force_refresh=True)
+                response = requests.get(api_url, headers=headers, cookies=cookies, timeout=20)
+                response.raise_for_status()
+                return response.json()
+            except Exception as refresh_error:
+                print(f"Token refresh failed: {refresh_error}")
+                raise HTTPException(status_code=401, detail="Authentication failed. Please check your session cookie.")
+        else:
+            raise HTTPException(status_code=e.response.status_code, detail=f"API request failed: {e.response.reason}")
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"A network error occurred: {e}")
+    except Exception as e:
+        print(f"Unexpected error in reveal_client_card: {e}")
         raise HTTPException(status_code=500, detail="An internal server error occurred.")
 
 @app.get("/")

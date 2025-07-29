@@ -1,239 +1,134 @@
-# Fora Travel Hotel Search Application
+# Travel Agent Application
 
-A full-stack hotel search application with a Next.js frontend and FastAPI backend that dynamically scrapes hotel data from the Fora Travel API.
-
-## Project Structure
-
-```
-/fora-search-app
-├── /backend/
-│   ├── main.py
-│   ├── requirements.txt
-│   └── .env (create this file)
-└── /frontend/
-    ├── /app/
-    │   ├── globals.css
-    │   ├── layout.tsx
-    │   └── page.tsx
-    ├── next.config.js
-    ├── package.json
-    ├── postcss.config.js
-    ├── tailwind.config.ts
-    └── tsconfig.json
-```
-
-## Setup Instructions
-
-### Backend Setup
-
-1. **Navigate to the backend directory:**
-   ```bash
-   cd backend
-   ```
-
-2. **Create a virtual environment (recommended):**
-   ```bash
-   python -m venv venv
-   ```
-
-3. **Activate the virtual environment:**
-   - Windows:
-     ```bash
-     venv\Scripts\activate
-     ```
-   - macOS/Linux:
-     ```bash
-     source venv/bin/activate
-     ```
-
-4. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-5. **Set up authentication** (choose one method):
-
-   **Method A: Automatic Setup (Recommended)**
-   ```bash
-   python setup_auth.py
-   ```
-   This will guide you through getting your session cookie and testing it.
-
-   **Method B: Manual Setup**
-   - Go to https://advisor.fora.travel and log in
-   - Open Developer Tools (F12) → Application/Storage → Cookies
-   - Find `__Secure-next-auth.session-token` and copy its value
-   - Create a `.env` file in the backend directory:
-     ```env
-     SESSION_COOKIE="your_session_cookie_here"
-     ```
-
-   **Note:** The bearer token is now automatically fetched from the session API, so you only need the session cookie.
-
-6. **Run the FastAPI server:**
-   ```bash
-   uvicorn main:app --reload --host 0.0.0.0 --port 8000
-   ```
-
-   The backend will be available at: http://localhost:8000
-
-### Frontend Setup
-
-1. **Navigate to the frontend directory:**
-   ```bash
-   cd frontend
-   ```
-
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-
-3. **Run the development server:**
-   ```bash
-   npm run dev
-   ```
-
-   The frontend will be available at: http://localhost:3000
+A comprehensive travel booking application built with Next.js frontend and FastAPI backend, integrating with the Fora Travel API.
 
 ## Features
 
-### Frontend
-- **Modern UI**: Clean, responsive design with Tailwind CSS
-- **Search Interface**: Large search bar with real-time search
-- **Rich Hotel Cards**: Display comprehensive hotel information including:
-  - High-quality hotel images from Cloudinary
-  - Hotel class ratings (1-5 stars)
-  - Brand information and location
-  - Average review ratings with star display
-  - Awards and accolades (e.g., MICHELIN Keys)
-  - Partnership programs and logos
-  - Commission rates and payout information
-  - Booking statistics
-  - Direct links to Google Maps
-  - Bookable status indicators
-- **Error Handling**: User-friendly error messages
-- **Loading States**: Visual feedback during API calls
-- **Responsive Design**: Works on desktop and mobile devices
-- **Hover Effects**: Smooth animations and transitions
+### Hotel Search and Booking
+- Search for hotels by destination
+- View hotel details, rates, and availability
+- Book hotels with client information
+- Real-time rate fetching and comparison
 
-### Backend
-- **FastAPI Server**: High-performance Python web framework
-- **CORS Support**: Allows frontend to communicate with backend
-- **API Integration**: Connects to Fora Travel API
-- **Authentication Service**: Automatic token management and refresh
-- **Error Handling**: Comprehensive error handling and logging
-- **Environment Variables**: Secure token management
+### Client Management
+- Create and manage client profiles
+- Store client contact information and addresses
+- Manage client payment cards securely
 
-## API Endpoints
+### Card Management
+- Add payment cards for clients using Selenium automation
+- **NEW: Card Reveal Functionality** - Reveal card information (card number, CVV, billing address) when needed
+- Delete cards when no longer needed
+- Secure card storage and retrieval
 
-### GET /api/search
-Search for hotels using the Fora Travel API.
+### Authentication
+- User authentication with Supabase
+- Email verification
+- Password reset functionality
+- Guest access for hotel browsing
 
-**Parameters:**
-- `query` (string, required): Search term for hotels or destinations
+## Card Reveal Feature
 
-**Example:**
-```
-GET http://localhost:8000/api/search?query=paris
-```
+The application now includes a card reveal functionality that allows users to reveal sensitive card information when needed for booking purposes.
 
-### POST /api/rates
-Get rate information for hotels.
+### How it Works
 
-**Request Body:**
-```json
-{
-  "currency": "USD",
-  "number_of_adults": 2,
-  "children_ages": [],
-  "start_date": "2025-08-14",
-  "end_date": "2025-08-22",
-  "supplier_ids": ["hotel_id_1", "hotel_id_2"],
-  "filters": {}
-}
-```
+1. **Backend API Endpoint**: `/api/clients/{client_id}/cards/{card_id}/reveal`
+   - Makes a secure request to the Fora Travel API
+   - Returns revealed card information including card number, CVV, and billing address
 
-### GET /auth/status
-Check authentication status and user information.
+2. **Frontend Integration**:
+   - Available in both the booking page and client management components
+   - Click the "Reveal" button next to any card to reveal its information
+   - Revealed information is displayed in a secure, highlighted section
+   - Once revealed, the button shows "✓ Revealed" and cannot be clicked again
 
-**Response:**
-```json
-{
-  "status": "authenticated",
-  "user": {
-    "name": "User Name",
-    "email": "user@example.com"
-  },
-  "message": "Authentication successful"
-}
+3. **Security Features**:
+   - Card information is only revealed when explicitly requested
+   - Revealed data is stored temporarily in the frontend state
+   - No sensitive data is logged or stored permanently
+   - Uses proper authentication headers for API requests
+
+### Usage
+
+1. Navigate to the booking page or client management
+2. Select a client to view their cards
+3. Click the "Reveal" button next to any card
+4. The card information will be displayed in a blue highlighted section
+5. Use this information for booking purposes
+
+### API Endpoint Details
+
+```http
+GET /api/clients/{client_id}/cards/{card_id}/reveal
 ```
 
-### GET /test-rates
-Test endpoint to verify rate API functionality.
+**Response**: Returns the revealed card information including:
+- `card_number`: The full card number
+- `cvv`: The card's CVV code
+- `billing_address`: The billing address associated with the card
 
-## Usage
+## Setup and Installation
 
-1. Start both the backend and frontend servers
-2. Open http://localhost:3000 in your browser
-3. Enter a search term (e.g., "Paris", "New York", "Tokyo")
-4. Click "Search" or press Enter
-5. View the hotel results
+### Prerequisites
+- Node.js 18+ and npm
+- Python 3.8+ and pip
+- Chrome browser (for Selenium automation)
 
-## Troubleshooting
+### Backend Setup
+1. Navigate to the `backend` directory
+2. Create a virtual environment: `python -m venv venv`
+3. Activate the virtual environment:
+   - Windows: `venv\Scripts\activate`
+   - macOS/Linux: `source venv/bin/activate`
+4. Install dependencies: `pip install -r requirements.txt`
+5. Create a `.env` file with your session cookie:
+   ```
+   SESSION_COOKIE="your_session_cookie_here"
+   ```
+6. Run the backend: `python main.py`
 
-### Common Issues
+### Frontend Setup
+1. Navigate to the `frontend` directory
+2. Install dependencies: `npm install`
+3. Create a `.env.local` file with your Supabase configuration:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+   ```
+4. Run the frontend: `npm run dev`
 
-1. **"Server is missing authentication tokens"**
-   - Make sure you've created the `.env` file in the backend directory
-   - Verify your Bearer token and session cookie are correct
-   - Tokens may expire - you may need to refresh them
+### Quick Start
+Use the provided scripts:
+- Windows: `start.bat`
+- PowerShell: `start.ps1`
 
-2. **"Authentication failed"**
-   - Your tokens may have expired
-   - Re-login to Fora Travel and get fresh tokens
+## API Integration
 
-3. **Frontend can't connect to backend**
-   - Ensure the backend is running on port 8000
-   - Check that CORS is properly configured
-   - Verify the frontend is making requests to `http://localhost:8000`
+The application integrates with the Fora Travel API for:
+- Hotel search and details
+- Rate fetching and comparison
+- Client and card management
+- Booking creation
+- Card reveal functionality
 
-4. **No hotels found**
-   - Try different search terms
-   - Check the browser console for API errors
-   - Verify the API response format
+## Security Considerations
 
-### Getting Fresh Tokens
+- Session cookies are required for API access
+- Card information is only revealed when explicitly requested
+- No sensitive data is stored permanently in the frontend
+- All API requests use proper authentication headers
+- Error handling prevents exposure of sensitive information
 
-If your tokens expire:
+## Contributing
 
-1. Go to https://advisor.fora.travel/
-2. Log in to your account
-3. Open browser developer tools (F12)
-4. Go to the Network tab
-5. Make a search on the website
-6. Find the API request and copy the new tokens
-7. Update your `.env` file
-
-## Development
-
-### Backend Development
-- The main API logic is in `backend/main.py`
-- Add new endpoints by creating new route functions
-- Use `uvicorn main:app --reload` for development with auto-reload
-
-### Frontend Development
-- The main page is in `frontend/app/page.tsx`
-- Styles are in `frontend/app/globals.css`
-- Tailwind CSS is configured in `frontend/tailwind.config.ts`
-
-## Security Notes
-
-- Never commit your `.env` file to version control
-- Keep your API tokens secure
-- The application is for development/prototype use only
-- Consider implementing rate limiting for production use
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
 ## License
 
-This project is for educational and development purposes only. 
+This project is licensed under the MIT License. 

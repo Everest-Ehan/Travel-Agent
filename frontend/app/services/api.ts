@@ -236,6 +236,35 @@ export class ApiService {
     }
   }
 
+  // Reveal card information
+  static async revealClientCard(clientId: string, cardId: string): Promise<any> {
+    try {
+      const url = `${API_BASE_URL}/api/clients/${clientId}/cards/${cardId}/reveal`;
+      console.log('🔍 Making card reveal request to:', url);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        },
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('❌ API Error:', errorData);
+        throw new Error(errorData.detail || 'Failed to reveal card information');
+      }
+
+      const data = await response.json();
+      console.log('✅ API /api/clients/{clientId}/cards/{cardId}/reveal response:', data);
+      return data;
+    } catch (error) {
+      console.error('Error revealing card information:', error);
+      throw error;
+    }
+  }
+
   // Fetch filtered hotel list (with user filters)
   static async fetchFilteredHotels(params: {view_mode: string, adults: number, dates: string, rooms: number, q: string, currency: string}) {
     // Call backend proxy endpoint
