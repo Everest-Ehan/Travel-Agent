@@ -162,6 +162,63 @@ async def get_trips(client_id: str = Query(..., description="The client ID to se
         print(f"Error in /api/trips: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
+def get_trip_details_data(trip_id: str):
+    """
+    Calls the real Fora Travel API to get detailed trip information.
+    """
+    try:
+        # Get authentication headers with automatic token refresh
+        headers = auth_service.get_auth_headers()
+        cookies = auth_service.get_session_cookies()
+        
+        # Construct the API URL for trip details
+        api_url = f"https://api.fora.travel/v1/trips/{trip_id}"
+
+        print(f"Making trip details request to: {api_url}")
+        print(f"Using auth headers: {headers}")
+        
+        response = requests.get(api_url, headers=headers, cookies=cookies, timeout=20)
+        response.raise_for_status()  # Raise an exception for bad status codes (4xx or 5xx)
+        return response.json()
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code in [401, 403]:
+            # Try to refresh token and retry once
+            try:
+                print("Authentication failed, attempting token refresh...")
+                headers = auth_service.get_auth_headers(force_refresh=True)
+                response = requests.get(api_url, headers=headers, cookies=cookies, timeout=20)
+                response.raise_for_status()
+                return response.json()
+            except Exception as refresh_error:
+                print(f"Token refresh failed: {refresh_error}")
+                raise HTTPException(status_code=401, detail="Authentication failed. Please check your session cookie.")
+        else:
+            raise HTTPException(status_code=e.response.status_code, detail=f"API request failed: {e.response.reason}")
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"A network error occurred: {e}")
+    except Exception as e:
+        print(f"Unexpected error in get_trip_details_data: {e}")
+        raise HTTPException(status_code=500, detail="An internal server error occurred.")
+
+
+@app.get("/api/trips/{trip_id}")
+async def get_trip_details(trip_id: str = Path(..., description="The trip ID to get details for.")):
+    """
+    API endpoint to get detailed information for a specific trip.
+    """
+    print(f"Received trip details request for trip: '{trip_id}'")
+    try:
+        data = get_trip_details_data(trip_id)
+        print(f"/api/trips/{trip_id} result: {json.dumps(data, indent=2)}")
+        return data
+    except HTTPException as e:
+        # Re-raise HTTPException to let FastAPI handle the response
+        raise e
+    except Exception as e:
+        print(f"Error in /api/trips/{trip_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 def get_rate_summary(request_data: dict):
     """
     Calls the Fora Travel rate summary API to get hotel rates.

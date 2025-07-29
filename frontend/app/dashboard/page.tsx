@@ -19,6 +19,8 @@ export default function Dashboard() {
   const [tripsLoading, setTripsLoading] = useState(false)
   const [tripsError, setTripsError] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<'all' | 'upcoming' | 'past' | 'cancelled'>('all')
+  
+
 
   // Fetch trips when user is available and trips tab is active
   useEffect(() => {
@@ -64,9 +66,9 @@ export default function Dashboard() {
 
   const statusCounts = getStatusCounts()
 
-  const handleTripClick = (trip: Trip) => {
-    // You can implement trip detail view or navigation here
-    console.log('Trip clicked:', trip)
+    const handleTripClick = (trip: Trip) => {
+    // Navigate to the trip details page
+    window.location.href = `/trip/${trip.id}`
   }
 
   return (
@@ -437,6 +439,8 @@ export default function Dashboard() {
         ) : (
           <ClientManagement onClientSelect={setSelectedClient} />
         )}
+
+        
       </main>
     </div>
   )

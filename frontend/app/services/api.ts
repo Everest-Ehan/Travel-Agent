@@ -517,4 +517,30 @@ export class ApiService {
       throw error;
     }
   }
+
+  // Fetch detailed trip information
+  static async fetchTripDetails(tripId: string): Promise<any> {
+    const url = `${API_BASE_URL}/api/trips/${encodeURIComponent(tripId)}`;
+    
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'ngrok-skip-browser-warning': 'true',
+        },
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error fetching trip details:', errorData);
+        throw new Error(errorData.detail || 'Failed to fetch trip details');
+      }
+      
+      const data = await response.json();
+      console.log('Trip details response:', data);
+      return data;
+    } catch (error) {
+      console.error('Error fetching trip details:', error);
+      throw error;
+    }
+  }
 } 
