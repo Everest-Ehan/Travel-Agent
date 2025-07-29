@@ -228,7 +228,7 @@ const TripDetailsPage: React.FC = () => {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => router.back()}
+                onClick={() => router.push('/dashboard?tab=trips')}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -325,24 +325,30 @@ const TripDetailsPage: React.FC = () => {
                       </div>
                       <div className="text-right">
                         <p className="text-lg font-bold text-gray-900">
-                          {formatCurrency(booking.total_commissionable_booking_usd)}
+                          {formatCurrency(booking.grand_total_usd)}
                         </p>
-                        <p className="text-sm text-gray-600">{typeof booking.status === 'string' ? booking.status : 'Unknown'}</p>
+                        <p className="text-sm text-gray-600">
+                          {typeof booking.status === 'string' ? 
+                            (booking.status === 'Cancellation' ? 'Cancelled' : booking.status) : 
+                            'Unknown'}
+                        </p>
                       </div>
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex justify-end mb-4">
-                      <button
-                        onClick={() => handleCancelBooking(booking)}
-                        className="inline-flex items-center px-4 py-2 border border-red-200 text-red-700 bg-red-50 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium"
-                      >
-                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                        Cancel Booking
-                      </button>
-                    </div>
+                    {booking.is_fully_cancellable && booking.status !== 'Cancellation' && !booking.cancellation_date && (
+                      <div className="flex justify-end mb-4">
+                        <button
+                          onClick={() => handleCancelBooking(booking)}
+                          className="inline-flex items-center px-4 py-2 border border-red-200 text-red-700 bg-red-50 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium"
+                        >
+                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                          Cancel Booking
+                        </button>
+                      </div>
+                    )}
 
                                          {/* Stay Details */}
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -380,7 +386,7 @@ const TripDetailsPage: React.FC = () => {
                            {booking.line_items.map((item: any, itemIndex: number) => (
                              <div key={itemIndex} className="flex justify-between text-sm">
                                <span className="text-gray-600">{typeof item.label === 'string' ? item.label : 'Unknown item'}</span>
-                               <span className="font-semibold text-gray-900">{formatCurrency(item.total)}</span>
+                               <span className="font-semibold text-gray-900">{formatCurrency(item.displayed_total || item.total)}</span>
                              </div>
                            ))}
                          </div>

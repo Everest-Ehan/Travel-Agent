@@ -75,7 +75,14 @@ const TripCard: React.FC<TripCardProps> = ({ trip, onClick }) => {
     const name = trip.name
     // Remove email prefix if present (e.g., "email@domain.com client's Trip Name")
     const match = name.match(/client's (.+)$/i)
-    return match ? match[1] : name
+    const cleanName = match ? match[1] : name
+    
+    // If the name is still too long, truncate it further
+    if (cleanName.length > 30) {
+      return cleanName.substring(0, 30) + '...'
+    }
+    
+    return cleanName
   }
 
   return (
@@ -112,7 +119,7 @@ const TripCard: React.FC<TripCardProps> = ({ trip, onClick }) => {
         {/* Trip Details */}
         <div className="flex-1 p-6">
           <div className="flex items-start justify-between mb-4">
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 mr-4">
               <h3 className="text-xl font-bold text-gray-900 truncate mb-3 leading-tight">
                 {getTripDestination()}
               </h3>
@@ -135,7 +142,7 @@ const TripCard: React.FC<TripCardProps> = ({ trip, onClick }) => {
             </div>
 
             {/* Status Badge */}
-            <div className={`flex items-center px-3 py-1.5 rounded-full text-xs font-semibold border ${getStatusColor(trip.status)} ml-4`}>
+            <div className={`flex items-center px-3 py-1.5 rounded-full text-xs font-semibold border ${getStatusColor(trip.status)} flex-shrink-0`}>
               {getStatusIcon(trip.status)}
               <span className="ml-1.5 capitalize">{trip.status}</span>
             </div>
