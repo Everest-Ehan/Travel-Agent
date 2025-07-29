@@ -70,13 +70,27 @@ export default function BookingDetailsSidebar({
       cartId: selectedRate?.cartId,
       id: selectedRate?.id
     })
+    console.log('🔍 Booking Code fields:', {
+      booking_code: selectedRate?.booking_code,
+      rate_identifier: selectedRate?.rate_identifier,
+      price_rate_code: selectedRate?.price?.rate_code
+    })
+    console.log('🔍 Price fields:', {
+      rate_code: selectedRate?.price?.rate_code,
+      rate_id: selectedRate?.price?.rate_id,
+      grand_total: selectedRate?.price?.grand_total_items?.find(item => item.category === 'grand_total')
+    })
     
     // Extract required fields for the booking URL and API
     // Cart ID is passed from parent component (from root level of rates response)
     const finalCartId = cartId || ''
+    console.log('🔍 Cart ID from parent:', cartId)
+    console.log('🔍 Final Cart ID:', finalCartId)
     const supplierId = selectedRate.supplier_id || selectedRate.supplierId || hotelId || ''
-    const expectedAmount = selectedRate.price.grand_total_items.find(item => item.category === 'grand_total')?.total?.toString() || '0'
-    const expectedCurrency = selectedRate.price.grand_total_items.find(item => item.category === 'grand_total')?.currency || selectedRate.price.avg_per_night.currency
+    // Use original_currency and original_total from the rates API response
+    const grandTotalItem = selectedRate.price.grand_total_items.find(item => item.category === 'grand_total')
+    const expectedAmount = grandTotalItem?.original_total?.toString() || '0'
+    const expectedCurrency = grandTotalItem?.original_currency || 'INR'
     const description = selectedRate.room?.description || ''
 
     // Build query params (minimal, as Fora does)
@@ -86,8 +100,9 @@ export default function BookingDetailsSidebar({
       start_date: startDate || '',
       end_date: endDate || '',
       adults: adults || '2',
-      rate_code: selectedRate.price.rate_code,  // Use price.rate_code instead of rate_identifier
-      rate_id: selectedRate.price.rate_id,      // Use price.rate_id instead of id
+      booking_code: selectedRate.booking_code,  // Use booking_code from rate
+      rate_code: selectedRate.price.rate_code,  // Use price.rate_code
+      rate_id: selectedRate.price.rate_id,      // Use price.rate_id
       expected_amount: expectedAmount,
       expected_currency: expectedCurrency,
       currency: selectedRate.price.avg_per_night.currency,
