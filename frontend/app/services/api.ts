@@ -429,7 +429,7 @@ export class ApiService {
       postal_code: string
       city: string
       state: string
-      country: string
+      country_id: number
     }
   }): Promise<any> {
     const url = `${API_BASE_URL}/api/booking`;

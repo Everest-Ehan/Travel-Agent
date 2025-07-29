@@ -952,6 +952,7 @@ export default function HotelDetailsPage() {
         endDate={endDate}
         adults={adults}
         rooms={rooms}
+        cartId={hotelRates?.cart_id}
       />
 
       {/* Perks Popup */}

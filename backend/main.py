@@ -293,6 +293,13 @@ def get_hotel_rates(
         
         data = response.json()
         print(f"/api/hotel-rates/{hotel_id} result: {json.dumps(data, indent=2)}")
+        
+        # Debug: Check if cart_id is present in the response
+        if 'results' in data and data['results']:
+            first_rate = data['results'][0]
+            print(f"🔍 First rate object keys: {list(first_rate.keys())}")
+            print(f"🔍 Cart ID fields in first rate: cart_id={first_rate.get('cart_id')}, cartId={first_rate.get('cartId')}, offer_id={first_rate.get('offer_id')}")
+        
         return data
     except requests.exceptions.HTTPError as e:
         if e.response.status_code in [401, 403]:
@@ -588,19 +595,80 @@ async def create_booking(request: Request):
         # Get request data
         booking_data = await request.json()
         
+        # Validate required fields
+        required_fields = ['booking_code', 'client_card_id', 'client_id', 'start_date', 'end_date', 'supplier_id']
+        missing_fields = [field for field in required_fields if not booking_data.get(field)]
+        
+        if missing_fields:
+            raise HTTPException(status_code=400, detail=f"Missing required fields: {missing_fields}")
+        
+        # Ensure cart_id is not empty if it's required
+        if not booking_data.get('cart_id'):
+            print("Warning: cart_id is empty, this might cause issues")
+        
         # Construct the API URL
         url = 'https://api.fora.travel/v1/supplier/book/'
         
         print(f"Making create booking request to: {url}")
         print(f"Booking data: {json.dumps(booking_data, indent=2)}")
         print(f"Using auth headers: {headers}")
+        print(f"Using cookies: {cookies}")
+        
+        # Add more detailed request logging
+        print(f"Request URL: {url}")
+        print(f"Request method: POST")
+        print(f"Request payload size: {len(json.dumps(booking_data))} bytes")
         
         response = requests.post(url, headers=headers, cookies=cookies, json=booking_data, timeout=20)
-        response.raise_for_status()
         
-        data = response.json()
-        print(f"/api/booking POST result: {json.dumps(data, indent=2)}")
-        return data
+        print(f"Response status: {response.status_code}")
+        print(f"Response headers: {dict(response.headers)}")
+        print(f"Response content: {response.text}")
+        
+        # Check if response is successful
+        if response.ok:
+            data = response.json()
+            print(f"/api/booking POST result: {json.dumps(data, indent=2)}")
+            return data
+        else:
+            # Handle non-successful responses (4xx, 5xx)
+            print(f"API request failed with status {response.status_code}")
+            
+            # Try to parse error response as JSON
+            try:
+                error_response = response.json()
+                print(f"Parsed error response: {json.dumps(error_response, indent=2)}")
+                
+                # Extract error detail from various possible fields
+                error_detail = None
+                if 'detail' in error_response:
+                    error_detail = error_response['detail']
+                elif 'message' in error_response:
+                    error_detail = error_response['message']
+                elif 'error' in error_response:
+                    error_detail = error_response['error']
+                elif 'errors' in error_response:
+                    # Handle validation errors
+                    errors = []
+                    for field, field_errors in error_response['errors'].items():
+                        if isinstance(field_errors, list):
+                            errors.append(f"{field}: {', '.join(field_errors)}")
+                        else:
+                            errors.append(f"{field}: {field_errors}")
+                    error_detail = f"Validation errors: {'; '.join(errors)}"
+                
+                if error_detail:
+                    print(f"Extracted error detail: {error_detail}")
+                    raise HTTPException(status_code=response.status_code, detail=error_detail)
+                else:
+                    raise HTTPException(status_code=response.status_code, detail=f"API request failed: {response.reason}")
+                    
+            except ValueError:
+                # If response is not JSON, use the raw text
+                error_detail = f"API Error: {response.text[:500]}"
+                print(f"Non-JSON error response: {error_detail}")
+                raise HTTPException(status_code=response.status_code, detail=error_detail)
+        
     except requests.exceptions.HTTPError as e:
         if e.response.status_code in [401, 403]:
             # Try to refresh token and retry once
@@ -614,7 +682,32 @@ async def create_booking(request: Request):
                 print(f"Token refresh failed: {refresh_error}")
                 raise HTTPException(status_code=401, detail="Authentication failed. Please check your session cookie.")
         else:
-            raise HTTPException(status_code=e.response.status_code, detail=f"API request failed: {e.response.reason}")
+            # Try to extract detailed error information from the response
+            error_detail = f"API request failed: {e.response.status_code} - {e.response.reason}"
+            try:
+                error_response = e.response.json()
+                if 'detail' in error_response:
+                    error_detail = error_response['detail']
+                elif 'message' in error_response:
+                    error_detail = error_response['message']
+                elif 'error' in error_response:
+                    error_detail = error_response['error']
+                elif 'errors' in error_response:
+                    # Handle validation errors
+                    errors = []
+                    for field, field_errors in error_response['errors'].items():
+                        if isinstance(field_errors, list):
+                            errors.append(f"{field}: {', '.join(field_errors)}")
+                        else:
+                            errors.append(f"{field}: {field_errors}")
+                    error_detail = f"Validation errors: {'; '.join(errors)}"
+            except:
+                # If we can't parse the error response, use the raw text
+                if e.response.text:
+                    error_detail = f"API Error: {e.response.text[:500]}"  # Limit to first 500 chars
+                    
+            print(f"Booking API error: {error_detail}")
+            raise HTTPException(status_code=e.response.status_code, detail=error_detail)
     except requests.exceptions.RequestException as e:
         raise HTTPException(status_code=500, detail=f"Failed to create booking: {e}")
     except Exception as e:

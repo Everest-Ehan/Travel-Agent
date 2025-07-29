@@ -60,7 +60,7 @@ interface BookingRequest {
     postal_code: string
     city: string
     state: string
-    country: string
+    country_id: number
   }
 }
 
@@ -262,6 +262,21 @@ export default function BookingPage() {
     }
   }
 
+  // Helper function to extract billing address from revealed card data
+  const extractBillingAddress = (cardData: any) => {
+    if (!cardData?.card_data) return undefined
+    
+    const card = cardData.card_data
+    return {
+      address_1: card.address || '',
+      address_2: card.address_additional || '',
+      postal_code: card.zip_code || '',
+      city: card.city || '',
+      state: card.state || '',
+      country_id: 23 // Default to US (23) - you might want to map country names to IDs
+    }
+  }
+
   const handleCreateBooking = async () => {
     if (!user) {
       setBookingError('User information not available. Please refresh the page.')
@@ -271,6 +286,11 @@ export default function BookingPage() {
       setBookingError('Please select a payment card.')
       return
     }
+    
+    if (!cartId) {
+      setBookingError('Missing cart ID. Please go back and select a rate again.')
+      return
+    }
     if (missingRequiredFields) {
       setBookingError('Missing booking details. Please go back and try again.')
       return
@@ -278,9 +298,26 @@ export default function BookingPage() {
     try {
       setBookingLoading(true)
       setBookingError(null)
+      
+      // Get billing address from revealed card data
+      let billingAddress: any = undefined
+      if (revealedCards[selectedCard.id]) {
+        // Use existing revealed data
+        billingAddress = extractBillingAddress(revealedCards[selectedCard.id])
+      } else {
+        // Reveal card to get billing address
+        console.log('🔍 Revealing card to get billing address:', selectedCard.id)
+        const revealedData = await ApiService.revealClientCard(userClient?.id || user!.id, selectedCard.id)
+        setRevealedCards(prev => ({
+          ...prev,
+          [selectedCard.id]: revealedData
+        }))
+        billingAddress = extractBillingAddress(revealedData)
+      }
+      
       const bookingRequest: BookingRequest = {
         booking_code: rateCode,
-        cart_id: cartId || '',
+        cart_id: cartId,
         children_ages: [],
         client_card_id: selectedCard.id,
         client_id: userClient?.id || user!.id,
@@ -300,12 +337,33 @@ export default function BookingPage() {
         supplier_program_id: supplierProgramId,
         trip_id: null,
         trip_name: `${user!.email} -'s ${hotelName} Trip`,
-        use_advisor_contact_info: false
+        use_advisor_contact_info: false,
+        billing_address: billingAddress
       }
+      
+      console.log('📦 Booking request with billing address:', bookingRequest)
+        console.log('🔍 Debug - cartId value:', cartId)
+  console.log('🔍 Debug - cartId type:', typeof cartId)
+  console.log('🔍 Debug - cartId length:', cartId.length)
+  console.log('🔍 Debug - rateCode:', rateCode)
+  console.log('🔍 Debug - rateId:', rateId)
+  console.log('🔍 Debug - supplierId:', supplierId)
+  console.log('🔍 Debug - cartId from URL:', cartId)
+  console.log('🔍 Debug - expectedAmount:', expectedAmount)
+  console.log('🔍 Debug - expectedCurrency:', expectedCurrency)
+      
       const result = await ApiService.createBooking(bookingRequest)
       router.push(`/booking/success?booking_id=${result.id}`)
-    } catch (error) {
-      setBookingError('Failed to create booking. Please try again.')
+    } catch (error:any) {
+      console.error('Booking error:', error)
+      let errorMessage = 'Failed to create booking. Please try again.'
+      
+      errorMessage = error.detail
+      console.log('Booking error:', errorMessage)
+      console.log('Booking error:', error)
+      // Show the actual error detail from the API response
+      
+      setBookingError(errorMessage)
     } finally {
       setBookingLoading(false)
     }
@@ -574,7 +632,39 @@ export default function BookingPage() {
               {/* Error Message */}
               {bookingError && (
                 <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-red-700">{bookingError}</p>
+                  <div className="flex items-start">
+                    <svg className="w-5 h-5 text-red-400 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-medium text-red-800 mb-1">Booking Error</h3>
+                      <p className="text-sm text-red-700 whitespace-pre-wrap">{bookingError}</p>
+                      <div className="mt-3">
+                        <button
+                          onClick={handleCreateBooking}
+                          disabled={bookingLoading}
+                          className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
+                        >
+                          {bookingLoading ? (
+                            <>
+                              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-red-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              Retrying...
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                              </svg>
+                              Try Again
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -601,7 +691,7 @@ export default function BookingPage() {
                   {bookingLoading ? (
                     <div className="flex items-center justify-center">
                       <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                      Creating Booking...
+                      {revealedCards[selectedCard?.id || ''] ? 'Creating Booking...' : 'Revealing Card...'}
                     </div>
                   ) : (
                     'Create Booking'

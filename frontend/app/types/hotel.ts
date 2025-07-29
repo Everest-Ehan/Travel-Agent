@@ -79,6 +79,7 @@ export interface HotelRatesResponse {
     payout_speed: string
   }
   programs: HotelRateProgram[]
+  cart_id?: string
 }
 
 export interface HotelRateProgram {

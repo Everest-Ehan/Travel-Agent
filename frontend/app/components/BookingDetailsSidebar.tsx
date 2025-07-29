@@ -15,6 +15,7 @@ interface BookingDetailsSidebarProps {
   endDate?: string
   adults?: string
   rooms?: string
+  cartId?: string
 }
 
 export default function BookingDetailsSidebar({
@@ -27,7 +28,8 @@ export default function BookingDetailsSidebar({
   startDate,
   endDate,
   adults,
-  rooms
+  rooms,
+  cartId
 }: BookingDetailsSidebarProps) {
   const router = useRouter()
 
@@ -60,8 +62,18 @@ export default function BookingDetailsSidebar({
   }
 
            const handleContinue = () => {
+    // Debug: Log the selectedRate object to see its structure
+    console.log('🔍 Selected Rate Object:', selectedRate)
+    console.log('🔍 Selected Rate Keys:', Object.keys(selectedRate || {}))
+    console.log('🔍 Cart ID fields:', {
+      cart_id: selectedRate?.cart_id,
+      cartId: selectedRate?.cartId,
+      id: selectedRate?.id
+    })
+    
     // Extract required fields for the booking URL and API
-    const cartId = selectedRate.cart_id || selectedRate.cartId || ''
+    // Cart ID is passed from parent component (from root level of rates response)
+    const finalCartId = cartId || ''
     const supplierId = selectedRate.supplier_id || selectedRate.supplierId || hotelId || ''
     const expectedAmount = selectedRate.price.grand_total_items.find(item => item.category === 'grand_total')?.total?.toString() || '0'
     const expectedCurrency = selectedRate.price.grand_total_items.find(item => item.category === 'grand_total')?.currency || selectedRate.price.avg_per_night.currency
@@ -74,12 +86,12 @@ export default function BookingDetailsSidebar({
       start_date: startDate || '',
       end_date: endDate || '',
       adults: adults || '2',
-      rate_code: selectedRate.rate_identifier,
-      rate_id: selectedRate.id,
+      rate_code: selectedRate.price.rate_code,  // Use price.rate_code instead of rate_identifier
+      rate_id: selectedRate.price.rate_id,      // Use price.rate_id instead of id
       expected_amount: expectedAmount,
       expected_currency: expectedCurrency,
       currency: selectedRate.price.avg_per_night.currency,
-      cart_id: cartId,
+      cart_id: finalCartId,
       supplier_program_id: program.id,
       description: description,
       supplier_id: supplierId
