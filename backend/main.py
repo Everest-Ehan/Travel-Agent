@@ -410,7 +410,7 @@ async def create_client(request: Request):
         # Fix: last_name cannot be empty string, use None instead
         last_name = client_data.get("last_name", "")
         if last_name == "":
-            last_name = None
+            last_name = "-"
             
         transformed_data = {
             "first_name": client_data.get("first_name", ""),
