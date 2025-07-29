@@ -6,6 +6,7 @@ import { ApiService } from '../services/api'
 import { HotelRate, HotelRateProgram } from '../types/hotel'
 import { ClientCard } from '../types/auth'
 import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../contexts/AuthContext'
 import SeleniumCardForm from '../components/SeleniumCardForm'
 import CardRevealModal from '../components/CardRevealModal'
 
@@ -13,6 +14,14 @@ interface Client {
   id: string
   first_name: string
   last_name: string
+  emails: Array<{
+    email: string
+    email_type: string
+  }>
+  phone_numbers: Array<{
+    phone_number: string
+    number_type: string
+  }>
   emails: Array<{
     email: string
     email_type: string
@@ -382,13 +391,17 @@ export default function BookingPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Complete Your Booking</h1>
           <p className="text-gray-600">Review your booking details and select a payment method</p>
+          <p className="text-gray-600">Review your booking details and select a payment method</p>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Side - Client Info and Card Selection */}
+          {/* Left Side - Client Info and Card Selection */}
           <div className="space-y-6">
+            {/* Client Information (Read-only) */}
             {/* Client Information (Read-only) */}
             <div className="bg-white rounded-xl shadow-lg border border-gray-200">
               <div className="p-6 border-b border-gray-200">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Booking For</h2>
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">Booking For</h2>
               </div>
               <div className="p-6">
@@ -406,6 +419,7 @@ export default function BookingPage() {
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                   </div>
+                </div>
                 </div>
               </div>
             </div>
