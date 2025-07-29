@@ -1,19 +1,34 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '../../contexts/AuthContext'
 
 export default function UserProfile() {
   const { user, signOut } = useAuth()
+  const router = useRouter()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [loading, setLoading] = useState(false)
 
   const handleSignOut = async () => {
+    console.log('🚪 Starting sign out process...')
     setLoading(true)
     try {
-      await signOut()
+      const result = await signOut()
+      console.log('🚪 Sign out result:', result)
+      if (result.error) {
+        console.error('❌ Sign out error:', result.error)
+      } else {
+        console.log('✅ Sign out successful')
+        setIsDropdownOpen(false)
+        // Redirect to search page (home page) after successful sign out
+        router.push('/')
+      }
     } catch (error) {
-      console.error('Sign out error:', error)
+      console.error('❌ Sign out exception:', error)
+      // Even if there's an error, try to redirect to search page
+      setIsDropdownOpen(false)
+      router.push('/')
     } finally {
       setLoading(false)
     }
@@ -74,7 +89,11 @@ export default function UserProfile() {
             </a>
             
             <button
-              onClick={handleSignOut}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                handleSignOut()
+              }}
               disabled={loading}
               className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors duration-150"
             >

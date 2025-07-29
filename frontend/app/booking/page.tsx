@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { ApiService } from '../services/api'
 import { HotelRate, HotelRateProgram } from '../types/hotel'
 import { ClientCard } from '../types/auth'
-import ClientForm from '../components/ClientForm'
+import { useAuth } from '../contexts/AuthContext'
 import SeleniumCardForm from '../components/SeleniumCardForm'
 import CardRevealModal from '../components/CardRevealModal'
 
@@ -13,8 +13,14 @@ interface Client {
   id: string
   first_name: string
   last_name: string
-  emails: Array<{ email: string; email_type: string }>
-  phone_numbers: Array<{ phone_number: string; number_type: string }>
+  emails: Array<{
+    email: string
+    email_type: string
+  }>
+  phone_numbers: Array<{
+    phone_number: string
+    number_type: string
+  }>
   addresses: Array<{
     label: string
     country_id: string | null
@@ -44,13 +50,7 @@ interface BookingRequest {
 export default function BookingPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  
-  // State for clients
-  const [clients, setClients] = useState<Client[]>([])
-  const [loadingClients, setLoadingClients] = useState(true)
-  const [clientsError, setClientsError] = useState<string | null>(null)
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
+  const { userClient, clientLoading } = useAuth()
   
   // State for client cards
   const [clientCards, setClientCards] = useState<ClientCard[]>([])
@@ -69,12 +69,6 @@ export default function BookingPage() {
   // State for booking
   const [bookingLoading, setBookingLoading] = useState(false)
   const [bookingError, setBookingError] = useState<string | null>(null)
-  
-  // State for client form
-  const [showClientForm, setShowClientForm] = useState(false)
-  const [clientSuccessMessage, setClientSuccessMessage] = useState('')
-  
-
 
   // Get booking data from URL params (minimal, as Fora does)
   const hotelId = searchParams.get('hotel_id') || ''
@@ -100,33 +94,15 @@ export default function BookingPage() {
   const hasCartId = !!cartId
   const hasSupplierId = !!supplierId
 
-  // Fetch clients on component mount
+  // Fetch client cards when userClient is available
   useEffect(() => {
-    fetchClients()
-  }, [])
-
-  // Fetch client cards when client is selected
-  useEffect(() => {
-    if (selectedClient) {
-      fetchClientCards(selectedClient.id)
+    if (userClient) {
+      fetchClientCards(userClient.id)
     } else {
       setClientCards([])
       setSelectedCard(null)
     }
-  }, [selectedClient])
-
-  const fetchClients = async () => {
-    try {
-      setLoadingClients(true)
-      setClientsError(null)
-      const response = await ApiService.fetchClients(searchQuery)
-      setClients(response.results || response)
-    } catch (error) {
-      setClientsError('Failed to load clients. Please try again.')
-    } finally {
-      setLoadingClients(false)
-    }
-  }
+  }, [userClient])
 
   const fetchClientCards = async (clientId: string) => {
     try {
@@ -143,43 +119,16 @@ export default function BookingPage() {
     }
   }
 
-  const handleClientSearch = (query: string) => {
-    setSearchQuery(query)
-    // Debounce search
-    const timeoutId = setTimeout(() => {
-      fetchClients()
-    }, 300)
-    return () => clearTimeout(timeoutId)
-  }
-
-  const handleAddNewClient = () => {
-    setShowClientForm(true)
-  }
-
-  const handleClientCreated = (newClient: Client) => {
-    console.log('🆕 New client created:', newClient.id, newClient.first_name, newClient.last_name)
-    setClients(prev => [newClient, ...prev])
-    setSelectedClient(newClient)
-    setShowClientForm(false)
-    setClientSuccessMessage('Client created successfully!')
-    // Clear success message after 3 seconds
-    setTimeout(() => setClientSuccessMessage(''), 3000)
-  }
-
-  const handleCancelClientForm = () => {
-    setShowClientForm(false)
-  }
-
   const handleAddCard = () => {
-    console.log('💳 Adding card for client ID:', selectedClient?.id)
+    console.log('💳 Adding card for client ID:', userClient?.id)
     setShowAddCardForm(true)
   }
 
   const handleCardCreated = () => {
-    console.log('✅ Card created, refreshing cards for client ID:', selectedClient?.id)
+    console.log('✅ Card created, refreshing cards for client ID:', userClient?.id)
     setShowAddCardForm(false)
-    if (selectedClient) {
-      fetchClientCards(selectedClient.id)
+    if (userClient) {
+      fetchClientCards(userClient.id)
     }
   }
 
@@ -289,8 +238,8 @@ export default function BookingPage() {
   }
 
   const handleCreateBooking = async () => {
-    if (!selectedClient) {
-      setBookingError('Please select a client.')
+    if (!userClient) {
+      setBookingError('Client information not available. Please refresh the page.')
       return
     }
     if (!selectedCard) {
@@ -359,6 +308,34 @@ export default function BookingPage() {
 
   const nights = calculateNights()
 
+  if (clientLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading your profile...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!userClient) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-semibold text-gray-900 mb-4">Profile Not Found</h1>
+          <p className="text-gray-600 mb-6">Unable to load your profile. Please try signing in again.</p>
+          <button
+            onClick={() => router.push('/auth')}
+            className="bg-primary-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors"
+          >
+            Sign In
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   if (missingRequiredFields) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -381,113 +358,39 @@ export default function BookingPage() {
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Complete Your Booking</h1>
-          <p className="text-gray-600">Select a client and payment method, then review your booking details</p>
+          <p className="text-gray-600">Review your booking details and select a payment method</p>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Left Side - Client and Card Selection */}
+          {/* Left Side - Client Info and Card Selection */}
           <div className="space-y-6">
-            {/* Client Selection */}
+            {/* Client Information (Read-only) */}
             <div className="bg-white rounded-xl shadow-lg border border-gray-200">
               <div className="p-6 border-b border-gray-200">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Select Client</h2>
-                {/* Search */}
-                <div className="mb-6">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="Search clients..."
-                      value={searchQuery}
-                      onChange={(e) => handleClientSearch(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    />
-                    <svg className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Booking For</h2>
+              </div>
+              <div className="p-6">
+                <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium text-gray-900">
+                        {userClient.first_name} {userClient.last_name}
+                      </h3>
+                      {userClient.emails.length > 0 && (
+                        <p className="text-sm text-gray-600">
+                          {userClient.emails[0].email}
+                        </p>
+                      )}
+                      {userClient.phone_numbers.length > 0 && (
+                        <p className="text-sm text-gray-600">
+                          {userClient.phone_numbers[0].phone_number}
+                        </p>
+                      )}
+                    </div>
+                    <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                   </div>
                 </div>
-                {/* Add New Client Button */}
-                <button 
-                  onClick={handleAddNewClient}
-                  className="w-full mb-6 bg-primary-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-primary-700 transition-colors"
-                >
-                  <svg className="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                  Add New Client
-                </button>
-                
-                {/* Success Message */}
-                {clientSuccessMessage && (
-                  <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-3">
-                    <p className="text-green-800 text-sm">{clientSuccessMessage}</p>
-                  </div>
-                )}
-              </div>
-              {/* Client List */}
-              <div className="p-6">
-                {loadingClients ? (
-                  <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
-                    <p className="text-gray-600 mt-2">Loading clients...</p>
-                  </div>
-                ) : clientsError ? (
-                  <div className="text-center py-8">
-                    <p className="text-red-600 mb-4">{clientsError}</p>
-                    <button
-                      onClick={fetchClients}
-                      className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
-                    >
-                      Try Again
-                    </button>
-                  </div>
-                ) : clients.length === 0 ? (
-                  <div className="text-center py-8">
-                    <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    <p className="text-gray-600">No clients found</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3 max-h-64 overflow-y-auto">
-                    {clients.map((client) => (
-                      <div
-                        key={client.id}
-                        onClick={() => {
-                          console.log('👤 Client selected:', client.id, client.first_name, client.last_name)
-                          setSelectedClient(client)
-                        }}
-                        className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                          selectedClient?.id === client.id
-                            ? 'border-primary-500 bg-primary-50'
-                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h3 className="font-medium text-gray-900">
-                              {client.first_name} {client.last_name}
-                            </h3>
-                            {client.emails.length > 0 && (
-                              <p className="text-sm text-gray-600">
-                                {client.emails[0].email}
-                              </p>
-                            )}
-                            {client.phone_numbers.length > 0 && (
-                              <p className="text-sm text-gray-600">
-                                {client.phone_numbers[0].phone_number}
-                              </p>
-                            )}
-                          </div>
-                          {selectedClient?.id === client.id && (
-                            <svg className="w-5 h-5 text-primary-600" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
 
@@ -676,7 +579,7 @@ export default function BookingPage() {
                 </button>
                 <button
                   onClick={handleCreateBooking}
-                  disabled={!selectedClient || !selectedCard || bookingLoading}
+                  disabled={!userClient || !selectedCard || bookingLoading}
                   className="flex-1 bg-primary-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {bookingLoading ? (
@@ -693,20 +596,12 @@ export default function BookingPage() {
           </div>
         </div>
       </div>
-      
-      {/* Client Form Modal */}
-      {showClientForm && (
-        <ClientForm
-          onClientCreated={handleClientCreated}
-          onCancel={handleCancelClientForm}
-        />
-      )}
 
       {/* Card Form Modal */}
-      {showAddCardForm && selectedClient && (
+      {showAddCardForm && userClient && (
         <SeleniumCardForm
           checkoutUrl={`https://advisor.fora.travel/partners/2ad941ab-6704-47f7-8601-a7241ea4202e/checkout/S1QAP7?start_date=${startDate}&end_date=${endDate}&adults=${adults}&rate_code=${rateCode}&rate_id=${rateId}&expected_amount=${expectedAmount}&expected_currency=${expectedCurrency}&supplier_type=hotels%2C${supplierId}&description=${encodeURIComponent(description)}&detailsCategory=Virtuoso&method=ae9ce586-c659-4f07-992e-314fb091ab2c&currency=${currency}&cart_id=${cartId}`}
-          clientName={selectedClient.first_name + ' ' + selectedClient.last_name}
+          clientName={userClient.first_name + ' ' + userClient.last_name}
           onCardCreated={handleCardCreated}
           onCancel={handleCancelCardForm}
         />

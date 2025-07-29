@@ -13,9 +13,6 @@ import SignUpPopup from './components/auth/SignUpPopup'
 export default function Home() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  
-  // Debug authentication state
-  console.log('Auth state:', { user: !!user, authLoading, userDetails: user });
   const [searchQuery, setSearchQuery] = useState('')
   const [hotels, setHotels] = useState<Hotel[]>([])
   const [loading, setLoading] = useState(false)
@@ -160,17 +157,13 @@ export default function Home() {
   }
 
   const handleCardClick = async (hotel: Hotel) => {
-    console.log('Card clicked for hotel:', hotel.id, 'User authenticated:', !!user);
-    
     // Check if user is authenticated
     if (!user) {
-      console.log('User not authenticated, showing signup popup');
       // Show signup popup instead of redirecting
       setShowSignUpPopup(true);
       return;
     }
     
-    console.log('User authenticated, proceeding to fetch hotel details');
     setLoadingCard(hotel.id)
     
     const hotelDetailsParams = {
@@ -182,23 +175,11 @@ export default function Home() {
       rooms: filters.rooms,
     };
     
-    console.log('Hotel details params:', hotelDetailsParams);
-    
     try {
       const details = await ApiService.fetchHotelDetails(hotel.id, hotelDetailsParams);
       console.log('Hotel details received:', details);
-      
-      const url = `/hotel/${hotel.id}?${new URLSearchParams(hotelDetailsParams as any).toString()}`;
-      console.log('Navigating to:', url);
-      
       // Navigate to details page with hotel id and params
-      // Try using window.location.href as a fallback if router.push doesn't work
-      try {
-        router.push(url);
-      } catch (routerError) {
-        console.error('Router push failed, using window.location:', routerError);
-        window.location.href = url;
-      }
+      router.push(`/hotel/${hotel.id}?${new URLSearchParams(hotelDetailsParams as any).toString()}`);
     } catch (err) {
       console.error('Error in hotel details request:', err);
       setLoadingCard(null) // Clear loading on error

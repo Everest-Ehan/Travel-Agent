@@ -371,46 +371,209 @@ async def create_client(request: Request):
     """
     API endpoint to create a new client.
     """
+    print("=" * 80)
+    print("🚀 CLIENT CREATION REQUEST STARTED")
+    print("=" * 80)
+    
     try:
-        # Get authentication headers with automatic token refresh
+        # Step 1: Get authentication headers
+        print("📝 Step 1: Getting authentication headers...")
         headers = auth_service.get_auth_headers()
         cookies = auth_service.get_session_cookies()
+        print(f"✅ Auth headers obtained: {bool(headers)}")
+        print(f"✅ Cookies obtained: {bool(cookies)}")
+        print(f"🔑 Headers: {json.dumps(headers, indent=2)}")
+        print(f"🍪 Cookies: {json.dumps(cookies, indent=2)}")
         
-        # Get request data
+        # Step 2: Parse request data
+        print("\n📝 Step 2: Parsing request data...")
         client_data = await request.json()
+        print(f"✅ Request data parsed successfully")
+        print(f"📄 Original client data from frontend:")
+        print(json.dumps(client_data, indent=2))
         
-        # Construct the API URL
+        # Step 3: Validate required fields
+        print("\n📝 Step 3: Validating client data...")
+        required_fields = ['first_name', 'emails']
+        missing_fields = [field for field in required_fields if field not in client_data or not client_data[field]]
+        
+        if missing_fields:
+            print(f"❌ Missing required fields: {missing_fields}")
+            raise HTTPException(status_code=400, detail=f"Missing required fields: {missing_fields}")
+        
+        print(f"✅ Required fields validation passed")
+        
+        # Step 4: Transform data to match Fora API expectations
+        print("\n📝 Step 4: Transforming data for Fora API...")
+        
+        # Transform data to match Fora API expectations
+        # Fix: last_name cannot be empty string, use None instead
+        last_name = client_data.get("last_name", "")
+        if last_name == "":
+            last_name = "-"
+            
+        transformed_data = {
+            "first_name": client_data.get("first_name", ""),
+            "last_name": last_name,
+            "emails": client_data.get("emails", []),
+            "phone_numbers": client_data.get("phone_numbers", []),
+            "addresses": client_data.get("addresses", [])
+        }
+        
+        print(f"🔄 Transformed data:")
+        print(json.dumps(transformed_data, indent=2))
+        
+        # Step 5: Construct API URL
+        print("\n📝 Step 5: Making API request...")
         url = 'https://api.fora.travel/v2/clients/'
+        print(f"🌐 API URL: {url}")
+        print(f"📤 Request method: POST")
+        print(f"📦 Payload size: {len(json.dumps(transformed_data))} bytes")
         
-        print(f"Making create client request to: {url}")
-        print(f"Client data: {json.dumps(client_data, indent=2)}")
-        print(f"Using auth headers: {headers}")
+        # Step 6: Make the request
+        print("\n📝 Step 6: Sending request to Fora API...")
+        response = requests.post(url, headers=headers, cookies=cookies, json=transformed_data, timeout=20)
         
-        response = requests.post(url, headers=headers, cookies=cookies, json=client_data, timeout=20)
+        # Step 7: Analyze response
+        print("\n📝 Step 7: Analyzing response...")
+        print(f"📊 Response status: {response.status_code}")
+        print(f"📊 Response reason: {response.reason}")
+        print(f"📊 Response headers: {dict(response.headers)}")
+        print(f"📊 Response content-type: {response.headers.get('content-type', 'unknown')}")
+        print(f"📊 Response content length: {len(response.text)} bytes")
+        print(f"📄 Raw response content:")
+        print("-" * 40)
+        print(response.text)
+        print("-" * 40)
+        
+        if not response.ok:
+            print(f"❌ Error response from Fora API:")
+            print(f"Status: {response.status_code}")
+            print(f"Reason: {response.reason}")
+            print(f"Content: {response.text}")
+            
+            # Try to parse error details
+            try:
+                error_json = response.json()
+                print(f"🔍 Parsed error JSON: {json.dumps(error_json, indent=2)}")
+            except:
+                print("🔍 Could not parse error response as JSON")
+        
         response.raise_for_status()
         
+        # Step 8: Parse successful response
+        print("\n📝 Step 8: Parsing successful response...")
         data = response.json()
-        print(f"/api/clients POST result: {json.dumps(data, indent=2)}")
+        print(f"✅ Client creation successful!")
+        print(f"🎉 Created client data:")
+        print(json.dumps(data, indent=2))
+        
+        print("=" * 80)
+        print("✅ CLIENT CREATION REQUEST COMPLETED SUCCESSFULLY")
+        print("=" * 80)
+        
         return data
     except requests.exceptions.HTTPError as e:
+        print("\n" + "=" * 80)
+        print("❌ HTTP ERROR OCCURRED")
+        print("=" * 80)
+        
+        error_detail = f"API request failed: {e.response.status_code} - {e.response.reason}"
+        if hasattr(e.response, 'text'):
+            error_detail += f" - {e.response.text}"
+        
+        print(f"🔍 HTTP Error Analysis:")
+        print(f"   Status Code: {e.response.status_code}")
+        print(f"   Reason: {e.response.reason}")
+        print(f"   URL: {e.response.url}")
+        print(f"   Headers: {dict(e.response.headers)}")
+        print(f"   Content: {e.response.text}")
+        
+        # Try to parse the error response
+        try:
+            error_json = e.response.json()
+            print(f"🔍 Parsed Error JSON:")
+            print(json.dumps(error_json, indent=2))
+            
+            # Look for specific error fields
+            if 'errors' in error_json:
+                print(f"🔍 Specific errors found:")
+                for field, errors in error_json['errors'].items():
+                    print(f"   {field}: {errors}")
+                    
+        except Exception as parse_error:
+            print(f"🔍 Could not parse error response as JSON: {parse_error}")
+        
         if e.response.status_code in [401, 403]:
-            # Try to refresh token and retry once
+            print("\n🔄 Attempting token refresh...")
             try:
-                print("Authentication failed, attempting token refresh...")
                 headers = auth_service.get_auth_headers(force_refresh=True)
-                response = requests.post(url, headers=headers, cookies=cookies, json=client_data, timeout=20)
-                response.raise_for_status()
-                return response.json()
+                print(f"🔑 New headers after refresh: {json.dumps(headers, indent=2)}")
+                
+                response = requests.post(url, headers=headers, cookies=cookies, json=transformed_data, timeout=20)
+                
+                print(f"🔄 Retry response status: {response.status_code}")
+                print(f"🔄 Retry response content: {response.text}")
+                
+                if response.ok:
+                    print("✅ Retry successful!")
+                    return response.json()
+                else:
+                    print("❌ Retry also failed")
+                    response.raise_for_status()
+                    
             except Exception as refresh_error:
-                print(f"Token refresh failed: {refresh_error}")
+                print(f"❌ Token refresh failed: {refresh_error}")
+                print(f"❌ Refresh error type: {type(refresh_error)}")
                 raise HTTPException(status_code=401, detail="Authentication failed. Please check your session cookie.")
         else:
-            raise HTTPException(status_code=e.response.status_code, detail=f"API request failed: {e.response.reason}")
+            print(f"❌ Non-auth HTTP Error: {error_detail}")
+            
+            # Provide more specific error messages based on status code
+            if e.response.status_code == 400:
+                try:
+                    error_json = e.response.json()
+                    specific_errors = []
+                    if 'errors' in error_json:
+                        for field, field_errors in error_json['errors'].items():
+                            specific_errors.append(f"{field}: {', '.join(field_errors) if isinstance(field_errors, list) else field_errors}")
+                    
+                    if specific_errors:
+                        detail = f"Validation errors: {'; '.join(specific_errors)}"
+                    else:
+                        detail = f"Bad request: {error_json.get('message', error_json.get('detail', 'Unknown validation error'))}"
+                        
+                    raise HTTPException(status_code=400, detail=detail)
+                except:
+                    pass
+            
+            raise HTTPException(status_code=e.response.status_code, detail=error_detail)
+            
     except requests.exceptions.RequestException as e:
-        raise HTTPException(status_code=500, detail=f"Failed to create client: {e}")
+        print("\n" + "=" * 80)
+        print("❌ REQUEST EXCEPTION OCCURRED")
+        print("=" * 80)
+        print(f"🔍 Request Exception: {type(e).__name__}")
+        print(f"🔍 Exception details: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Network error: {e}")
+        
+    except HTTPException as e:
+        print(f"\n❌ HTTP Exception being re-raised: {e.detail}")
+        raise e
+        
     except Exception as e:
-        print(f"Unexpected error in create_client: {e}")
-        raise HTTPException(status_code=500, detail="An internal server error occurred.")
+        print("\n" + "=" * 80)
+        print("❌ UNEXPECTED ERROR OCCURRED")
+        print("=" * 80)
+        print(f"🔍 Exception type: {type(e).__name__}")
+        print(f"🔍 Exception details: {str(e)}")
+        print(f"🔍 Exception args: {e.args}")
+        
+        import traceback
+        print(f"🔍 Full traceback:")
+        traceback.print_exc()
+        
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @app.post('/api/booking')
 async def create_booking(request: Request):
@@ -694,6 +857,162 @@ def auth_status():
                 "message": "Please check your session cookie"
             }
     except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e)
+        }
+
+@app.get("/debug/client-structure")
+def debug_client_structure():
+    """
+    Debug endpoint to see the structure of existing clients
+    """
+    print("=" * 80)
+    print("🔍 DEBUGGING CLIENT STRUCTURE")
+    print("=" * 80)
+    
+    try:
+        headers = auth_service.get_auth_headers()
+        cookies = auth_service.get_session_cookies()
+        
+        print(f"🔑 Using headers: {json.dumps(headers, indent=2)}")
+        print(f"🍪 Using cookies: {json.dumps(cookies, indent=2)}")
+        
+        # Get a few existing clients to see their structure
+        url = 'https://api.fora.travel/v1/clients/?limit=3'
+        print(f"🌐 Fetching from: {url}")
+        
+        response = requests.get(url, headers=headers, cookies=cookies, timeout=20)
+        print(f"📊 Response status: {response.status_code}")
+        print(f"📊 Response headers: {dict(response.headers)}")
+        
+        response.raise_for_status()
+        
+        data = response.json()
+        print(f"✅ Successfully fetched {len(data.get('results', []))} clients")
+        print(f"📄 Full response structure:")
+        print(json.dumps(data, indent=2))
+        
+        # Analyze the structure of the first client
+        if data.get('results') and len(data['results']) > 0:
+            first_client = data['results'][0]
+            print(f"\n🔍 ANALYZING FIRST CLIENT STRUCTURE:")
+            print(f"📋 Client fields: {list(first_client.keys())}")
+            
+            for field, value in first_client.items():
+                print(f"   {field}: {type(value).__name__} = {value}")
+        
+        return {
+            "status": "success",
+            "message": "Check console for detailed client structure analysis",
+            "total_clients": len(data.get('results', [])),
+            "sample_client": data.get('results', [{}])[0] if data.get('results') else {},
+            "client_fields": list(data.get('results', [{}])[0].keys()) if data.get('results') else []
+        }
+    except Exception as e:
+        print(f"❌ Error in debug_client_structure: {e}")
+        import traceback
+        traceback.print_exc()
+        return {
+            "status": "error",
+            "message": str(e),
+            "error_type": type(e).__name__
+        }
+
+@app.post("/debug/test-client-creation")
+async def test_client_creation(request: Request):
+    """
+    Test endpoint to try different client creation formats
+    """
+    print("=" * 80)
+    print("🧪 TESTING CLIENT CREATION FORMATS")
+    print("=" * 80)
+    
+    try:
+        headers = auth_service.get_auth_headers()
+        cookies = auth_service.get_session_cookies()
+        
+        # Get test data from request
+        test_data = await request.json()
+        test_email = test_data.get('email', 'test@example.com')
+        
+        print(f"🧪 Testing with email: {test_email}")
+        
+        # Try different data formats
+        formats_to_try = [
+            {
+                "name": "Format 1: Basic fields",
+                "data": {
+                    "first_name": test_email,
+                    "last_name": "",
+                    "emails": [{"email": test_email, "email_type": "primary"}],
+                    "phone_numbers": [],
+                    "addresses": []
+                }
+            },
+            {
+                "name": "Format 2: Minimal required",
+                "data": {
+                    "first_name": test_email,
+                    "emails": [{"email": test_email, "email_type": "primary"}]
+                }
+            },
+            {
+                "name": "Format 3: With null last_name",
+                "data": {
+                    "first_name": test_email,
+                    "last_name": None,
+                    "emails": [{"email": test_email, "email_type": "primary"}]
+                }
+            }
+        ]
+        
+        results = []
+        
+        for format_test in formats_to_try:
+            print(f"\n🧪 Testing {format_test['name']}:")
+            print(f"📄 Data: {json.dumps(format_test['data'], indent=2)}")
+            
+            try:
+                url = 'https://api.fora.travel/v2/clients/'
+                response = requests.post(url, headers=headers, cookies=cookies, json=format_test['data'], timeout=10)
+                
+                print(f"📊 Status: {response.status_code}")
+                print(f"📄 Response: {response.text}")
+                
+                result = {
+                    "format": format_test['name'],
+                    "status_code": response.status_code,
+                    "success": response.ok,
+                    "response": response.text
+                }
+                
+                if response.ok:
+                    print(f"✅ {format_test['name']} - SUCCESS!")
+                    result["data"] = response.json()
+                else:
+                    print(f"❌ {format_test['name']} - FAILED")
+                    
+                results.append(result)
+                
+            except Exception as e:
+                print(f"❌ Exception in {format_test['name']}: {e}")
+                results.append({
+                    "format": format_test['name'],
+                    "success": False,
+                    "error": str(e)
+                })
+        
+        return {
+            "status": "completed",
+            "results": results,
+            "successful_formats": [r for r in results if r.get('success')]
+        }
+        
+    except Exception as e:
+        print(f"❌ Error in test_client_creation: {e}")
+        import traceback
+        traceback.print_exc()
         return {
             "status": "error",
             "message": str(e)
