@@ -63,8 +63,7 @@ export default function BookingDetailsSidebar({
 
            const handleContinue = () => {
     // Debug: Log the selectedRate object to see its structure
-    console.log('🔍 Selected Rate Object:', selectedRate)
-    console.log('🔍 Selected Rate Keys:', Object.keys(selectedRate || {}))
+
     console.log('🔍 Cart ID fields:', {
       cart_id: selectedRate?.cart_id,
       cartId: selectedRate?.cartId,
@@ -84,8 +83,7 @@ export default function BookingDetailsSidebar({
     // Extract required fields for the booking URL and API
     // Cart ID is passed from parent component (from root level of rates response)
     const finalCartId = cartId || ''
-    console.log('🔍 Cart ID from parent:', cartId)
-    console.log('🔍 Final Cart ID:', finalCartId)
+
     const supplierId = selectedRate.supplier_id || selectedRate.supplierId || hotelId || ''
     // Use original_currency and original_total for backend API (Fora requirements)
     const grandTotalItem = selectedRate.price.grand_total_items.find(item => item.category === 'grand_total')
@@ -130,9 +128,8 @@ export default function BookingDetailsSidebar({
   const displayCurrency = selectedRate.price.grand_total_items.find(item => item.category === 'grand_total')?.currency || 'USD'
   
   // Debug logging
-  console.log('🔍 Display Currency:', displayCurrency)
-  console.log('🔍 Total Price:', totalPrice)
-  console.log('🔍 Grand Total Items:', selectedRate.price.grand_total_items)
+  
+  
   const commissionableValue = basePrice
   const totalCommission = (commissionableValue * selectedRate.commission.expected_commission_percent) / 100
   const yourCommission = totalCommission * 0.7 // Assuming 70% commission split

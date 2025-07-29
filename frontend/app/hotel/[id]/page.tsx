@@ -143,7 +143,7 @@ export default function HotelDetailsPage() {
   const rooms = searchParams.get('rooms') || '1'
 
   // Debug: Log the date parsing
-  console.log('Date parsing debug:', { startDate, endDate })
+
   
   // Ensure we have valid dates for the API
   const hasValidDates = startDate && endDate && startDate.length === 10 && endDate.length === 10
