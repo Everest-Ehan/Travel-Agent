@@ -491,4 +491,30 @@ export class ApiService {
       throw error;
     }
   }
+
+  // Fetch trips for a specific client
+  static async fetchTrips(clientId: string): Promise<any> {
+    const url = `${API_BASE_URL}/api/trips?client_id=${encodeURIComponent(clientId)}`;
+    
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'ngrok-skip-browser-warning': 'true',
+        },
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error fetching trips:', errorData);
+        throw new Error(errorData.detail || 'Failed to fetch trips');
+      }
+      
+      const data = await response.json();
+      console.log('Trips response:', data);
+      return data;
+    } catch (error) {
+      console.error('Error fetching trips:', error);
+      throw error;
+    }
+  }
 } 
