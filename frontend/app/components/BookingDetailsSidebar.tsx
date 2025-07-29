@@ -87,10 +87,14 @@ export default function BookingDetailsSidebar({
     console.log('🔍 Cart ID from parent:', cartId)
     console.log('🔍 Final Cart ID:', finalCartId)
     const supplierId = selectedRate.supplier_id || selectedRate.supplierId || hotelId || ''
-    // Use original_currency and original_total from the rates API response
+    // Use original_currency and original_total for backend API (Fora requirements)
     const grandTotalItem = selectedRate.price.grand_total_items.find(item => item.category === 'grand_total')
     const expectedAmount = grandTotalItem?.original_total?.toString() || '0'
     const expectedCurrency = grandTotalItem?.original_currency || 'INR'
+    
+    // Use USD values for frontend display
+    const displayAmount = grandTotalItem?.total?.toString() || '0'
+    const displayCurrency = grandTotalItem?.currency || 'USD'
     const description = selectedRate.room?.description || ''
 
     // Build query params (minimal, as Fora does)
@@ -105,6 +109,7 @@ export default function BookingDetailsSidebar({
       rate_id: selectedRate.price.rate_id,      // Use price.rate_id
       expected_amount: expectedAmount,
       expected_currency: expectedCurrency,
+      display_amount: displayAmount,  // Add USD display amount
       currency: selectedRate.price.avg_per_night.currency,
       cart_id: finalCartId,
       supplier_program_id: program.id,
@@ -118,9 +123,16 @@ export default function BookingDetailsSidebar({
   }
 
   const nights = calculateNights()
+  // Use USD values for frontend display
   const totalPrice = selectedRate.price.grand_total_items.find(item => item.category === 'grand_total')?.total || 0
   const basePrice = selectedRate.price.grand_total_items.find(item => item.category === 'base')?.total || 0
   const taxesAndFees = selectedRate.price.grand_total_items.find(item => item.category === 'taxes_and_fees')?.total || 0
+  const displayCurrency = selectedRate.price.grand_total_items.find(item => item.category === 'grand_total')?.currency || 'USD'
+  
+  // Debug logging
+  console.log('🔍 Display Currency:', displayCurrency)
+  console.log('🔍 Total Price:', totalPrice)
+  console.log('🔍 Grand Total Items:', selectedRate.price.grand_total_items)
   const commissionableValue = basePrice
   const totalCommission = (commissionableValue * selectedRate.commission.expected_commission_percent) / 100
   const yourCommission = totalCommission * 0.7 // Assuming 70% commission split
@@ -303,7 +315,7 @@ export default function BookingDetailsSidebar({
                   <div key={index} className="flex justify-between items-center text-sm">
                     <span className="text-gray-600">{item.label}</span>
                     <span className="font-medium text-gray-900">
-                      {formatCurrency(item.total, item.currency)}
+                      ${item.total}
                     </span>
                   </div>
                 ))}
@@ -317,19 +329,19 @@ export default function BookingDetailsSidebar({
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">{rooms} Room x {nights} Nights</span>
                   <span className="font-medium text-gray-900">
-                    {formatCurrency(basePrice, selectedRate.price.avg_per_night.currency)}
+                    ${basePrice}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Taxes & fees</span>
                   <span className="font-medium text-gray-900">
-                    {formatCurrency(taxesAndFees, selectedRate.price.avg_per_night.currency)}
+                    ${taxesAndFees}
                   </span>
                 </div>
                 <div className="border-t border-gray-200 pt-2 flex justify-between items-center">
-                  <span className="font-semibold text-gray-900">Total {selectedRate.price.avg_per_night.currency}</span>
+                  <span className="font-semibold text-gray-900">Total USD</span>
                   <span className="font-bold text-lg text-gray-900">
-                    {formatCurrency(totalPrice, selectedRate.price.avg_per_night.currency)}
+                    ${totalPrice}
                   </span>
                 </div>
                 <p className="text-xs text-gray-500">Including all known taxes and fees</p>

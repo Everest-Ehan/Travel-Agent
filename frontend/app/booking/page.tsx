@@ -98,6 +98,7 @@ export default function BookingPage() {
   const rateId = searchParams.get('rate_id') || ''
   const expectedAmount = searchParams.get('expected_amount') || ''
   const expectedCurrency = searchParams.get('expected_currency') || ''
+  const displayAmount = searchParams.get('display_amount') || ''
   const currency = searchParams.get('currency') || ''
   const cartId = searchParams.get('cart_id') || ''
   const supplierProgramId = searchParams.get('supplier_program_id') || ''
@@ -628,9 +629,9 @@ export default function BookingPage() {
                 <h4 className="font-semibold text-gray-900 mb-3">Price Details</h4>
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Total ({expectedCurrency})</span>
+                    <span className="text-gray-600">Total USD</span>
                     <span className="font-bold text-lg text-gray-900">
-                      {formatCurrency(expectedAmount, expectedCurrency)}
+                      ${displayAmount}
                     </span>
                   </div>
                 </div>
