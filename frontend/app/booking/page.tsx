@@ -604,20 +604,81 @@ export default function BookingPage() {
                             'Dates not available'}</p>
                         </>
                       )}
-                      <span className="inline-block mt-2 px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                        Upcoming
-                      </span>
-                      {trips.length > 0 && (
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setShowTripModal(true)
-                          }}
-                          className="block mt-2 text-sm text-blue-600 hover:text-blue-800"
-                        >
-                          Select a different trip
-                        </button>
-                      )}
+                      {(() => {
+                        const selectedTrip = selectedTripId ? trips.find(t => t.id === selectedTripId) : null
+                        const activeTrips = trips.filter(trip => trip.status !== 'cancelled' && trip.status !== 'completed')
+                        
+                        if (selectedTrip) {
+                          // Show the selected trip's status
+                          let statusText = 'Upcoming'
+                          let statusClass = 'bg-blue-100 text-blue-800'
+                          
+                          if (selectedTrip.status === 'cancelled') {
+                            statusText = 'Cancelled'
+                            statusClass = 'bg-red-100 text-red-800'
+                          } else if (selectedTrip.status === 'completed') {
+                            statusText = 'Completed'
+                            statusClass = 'bg-gray-100 text-gray-800'
+                          }
+                          
+                          return (
+                            <>
+                              <span className={`inline-block mt-2 px-2 py-1 text-xs font-medium rounded-full ${statusClass}`}>
+                                {statusText}
+                              </span>
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setShowTripModal(true)
+                                }}
+                                className="block mt-2 text-sm text-blue-600 hover:text-blue-800"
+                              >
+                                Select a different trip
+                              </button>
+                            </>
+                          )
+                        } else if (activeTrips.length > 0) {
+                          return (
+                            <>
+                              <span className="inline-block mt-2 px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                                Upcoming
+                              </span>
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setShowTripModal(true)
+                                }}
+                                className="block mt-2 text-sm text-blue-600 hover:text-blue-800"
+                              >
+                                Select a different trip
+                              </button>
+                            </>
+                          )
+                        } else if (trips.length > 0) {
+                          return (
+                            <>
+                              <span className="inline-block mt-2 px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
+                                No upcoming trips
+                              </span>
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setShowTripModal(true)
+                                }}
+                                className="block mt-2 text-sm text-blue-600 hover:text-blue-800"
+                              >
+                                Show all trips
+                              </button>
+                            </>
+                          )
+                        } else {
+                          return (
+                            <span className="inline-block mt-2 px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
+                              No trips
+                            </span>
+                          )
+                        }
+                      })()}
                     </div>
                   </div>
                 </div>
