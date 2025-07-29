@@ -259,34 +259,7 @@ export default function BookingPage() {
     }
   }
 
-  const handleTestModal = () => {
-    console.log('Testing modal...')
-    setSelectedRevealedCard({
-      cardData: {
-        card_data: {
-          first_6: '555671',
-          last_4: '4892',
-          expire_month: 12,
-          expire_year: 2029,
-          card_logo: 'masterCard',
-          address: '16075 Surprise Ln',
-          address_additional: 'Apt 1',
-          city: 'Huntington Beach',
-          state: 'CA',
-          zip_code: '92649',
-          country_name: 'United States of America'
-        }
-      },
-      cardInfo: {
-        holder_name: 'Sathvik Nori',
-        last_4: '4892',
-        expire_month: '12',
-        expire_year: '2029',
-        card_logo: 'masterCard'
-      }
-    })
-    setShowRevealModal(true)
-  }
+
 
   const getCardLogo = (cardLogo: string) => {
     switch (cardLogo.toLowerCase()) {
@@ -759,30 +732,42 @@ export default function BookingPage() {
                               </div>
                             </div>
                             <div className="flex items-center space-x-2">
-                              {/* Reveal button */}
+                              {/* View Card Details button */}
                               <button
                                 onClick={(e) => handleRevealCard(card.id, e)}
                                 disabled={revealingCard === card.id}
-                                className={`px-3 py-1 text-xs rounded-md transition-colors ${
+                                className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 flex items-center space-x-2 ${
                                   revealedCards[card.id]
-                                    ? 'bg-green-100 hover:bg-green-200 text-green-700'
+                                    ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm'
                                     : revealingCard === card.id
-                                    ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
-                                    : 'bg-blue-100 hover:bg-blue-200 text-blue-700'
+                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                    : 'bg-gray-600 hover:bg-gray-700 text-white shadow-sm hover:shadow-md'
                                 }`}
                               >
                                 {revealingCard === card.id ? (
-                                  <div className="flex items-center space-x-1">
-                                    <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <>
+                                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                     </svg>
-                                    <span>Revealing...</span>
-                                  </div>
+                                    <span>Loading...</span>
+                                  </>
                                 ) : revealedCards[card.id] ? (
-                                  <span>👁️ View</span>
+                                  <>
+                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                    <span>View Details</span>
+                                  </>
                                 ) : (
-                                  <span>🔓 Reveal</span>
+                                  <>
+                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                    <span>View Details</span>
+                                  </>
                                 )}
                               </button>
                               
@@ -909,13 +894,7 @@ export default function BookingPage() {
                 </div>
               )}
 
-              {/* Test Modal Button */}
-              <button
-                onClick={handleTestModal}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-              >
-                Test Modal
-              </button>
+
               {/* Action Buttons */}
               <div className="flex gap-4 pt-4">
                 <button
