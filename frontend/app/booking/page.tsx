@@ -566,24 +566,34 @@ export default function BookingPage() {
                       <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
                       </div>
-                    ) : trips.length > 0 ? (
+                    ) : trips.filter(trip => trip.status !== 'cancelled' && trip.status !== 'completed').length > 0 ? (
                       <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden">
-                        {trips[0]?.image && trips[0].image.length > 0 ? (
-                          <img 
-                            src={`https://api.fora.travel/v1/trips/${trips[0].id}/image`}
-                            alt="Trip"
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.currentTarget.src = '/placeholder-trip.jpg'
-                            }}
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                            <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                            </svg>
-                          </div>
-                        )}
+                        {(() => {
+                          const activeTrips = trips.filter(trip => trip.status !== 'cancelled' && trip.status !== 'completed')
+                          const firstActiveTrip = activeTrips[0]
+                          return firstActiveTrip?.image && firstActiveTrip.image.length > 0 ? (
+                            <img 
+                              src={`https://media.fora.travel/foratravelportal/image/upload/c_fill,w_64,h_64,g_auto/f_auto/q_auto/v1/${firstActiveTrip.image[0].public_id}?_a=BAVAZGDW0`}
+                              alt="Trip"
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                // Image failed to load
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                              <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                              </svg>
+                            </div>
+                          )
+                        })()}
+                      </div>
+                    ) : trips.length > 0 ? (
+                      <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
+                        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
                       </div>
                     ) : (
                       <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
@@ -596,28 +606,62 @@ export default function BookingPage() {
                       <h3 className="font-medium text-gray-900 truncate">
                         {user?.email ? `${user.email} client` : 'User'}
                       </h3>
-                      {trips.length > 0 && (
-                        <>
-                          <p className="text-sm text-gray-600">{trips[0]?.name || 'Trip'}</p>
-                          <p className="text-sm text-gray-600">{trips[0]?.start_date && trips[0]?.end_date ? 
-                            `${new Date(trips[0].start_date).toLocaleDateString()} - ${new Date(trips[0].end_date).toLocaleDateString()}` : 
-                            'Dates not available'}</p>
-                        </>
-                      )}
-                      <span className="inline-block mt-2 px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                        Upcoming
-                      </span>
-                      {trips.length > 0 && (
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setShowTripModal(true)
-                          }}
-                          className="block mt-2 text-sm text-blue-600 hover:text-blue-800"
-                        >
-                          Select a different trip
-                        </button>
-                      )}
+                      {(() => {
+                        const activeTrips = trips.filter(trip => trip.status !== 'cancelled' && trip.status !== 'completed')
+                        const firstActiveTrip = activeTrips[0]
+                        return firstActiveTrip ? (
+                          <>
+                            <p className="text-sm text-gray-600">{firstActiveTrip.name || 'Trip'}</p>
+                            <p className="text-sm text-gray-600">{firstActiveTrip.start_date && firstActiveTrip.end_date ? 
+                              `${new Date(firstActiveTrip.start_date).toLocaleDateString()} - ${new Date(firstActiveTrip.end_date).toLocaleDateString()}` : 
+                              'Dates not available'}</p>
+                          </>
+                        ) : null
+                      })()}
+                      {(() => {
+                        const activeTrips = trips.filter(trip => trip.status !== 'cancelled' && trip.status !== 'completed')
+                        if (activeTrips.length > 0) {
+                          return (
+                            <>
+                              <span className="inline-block mt-2 px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                                Upcoming
+                              </span>
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setShowTripModal(true)
+                                }}
+                                className="block mt-2 text-sm text-blue-600 hover:text-blue-800"
+                              >
+                                Select a different trip
+                              </button>
+                            </>
+                          )
+                        } else if (trips.length > 0) {
+                          return (
+                            <>
+                              <span className="inline-block mt-2 px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
+                                No upcoming trips
+                              </span>
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setShowTripModal(true)
+                                }}
+                                className="block mt-2 text-sm text-blue-600 hover:text-blue-800"
+                              >
+                                Show all trips
+                              </button>
+                            </>
+                          )
+                        } else {
+                          return (
+                            <span className="inline-block mt-2 px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
+                              No trips
+                            </span>
+                          )
+                        }
+                      })()}
                     </div>
                   </div>
                 </div>
@@ -969,12 +1013,24 @@ export default function BookingPage() {
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                   <p className="text-gray-600 mt-2">Loading trips...</p>
                 </div>
-              ) : trips.length === 0 ? (
+              ) : trips.filter(trip => {
+                const matchesSearch = trip.name?.toLowerCase().includes(tripSearchQuery.toLowerCase()) ||
+                                     trip.client_name?.toLowerCase().includes(tripSearchQuery.toLowerCase())
+                
+                // Filter by status - show cancelled/past trips only if checkbox is checked
+                if (!showPastTrips && (trip.status === 'cancelled' || trip.status === 'completed')) {
+                  return false
+                }
+                
+                return matchesSearch
+              }).length === 0 ? (
                 <div className="text-center py-8">
                   <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                   </svg>
-                  <p className="text-gray-600 mb-4">No trips found</p>
+                  <p className="text-gray-600 mb-4">
+                    {showPastTrips ? 'No trips found' : 'No upcoming trips'}
+                  </p>
                   <button
                     onClick={() => {
                       setSelectedTripType('new')
@@ -1000,8 +1056,6 @@ export default function BookingPage() {
                       return matchesSearch
                     })
                     .map((trip) => {
-                      console.log('Trip data:', trip)
-                      console.log('Trip image:', trip.image)
                       const startDate = trip.start_date ? new Date(trip.start_date) : null
                       const endDate = trip.end_date ? new Date(trip.end_date) : null
                       const nights = trip.num_nights || (startDate && endDate ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) : 0)
@@ -1022,15 +1076,11 @@ export default function BookingPage() {
                             <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                               {trip.image && trip.image.length > 0 ? (
                                 <img 
-                                  src={`https://api.fora.travel/v1/trips/${trip.id}/image`}
+                                  src={`https://media.fora.travel/foratravelportal/image/upload/c_fill,w_80,h_80,g_auto/f_auto/q_auto/v1/${trip.image[0].public_id}?_a=BAVAZGDW0`}
                                   alt="Trip"
                                   className="w-full h-full object-cover"
                                   onError={(e) => {
-                                    console.log('Image failed to load:', e.currentTarget.src)
-                                    e.currentTarget.src = '/placeholder-trip.jpg'
-                                  }}
-                                  onLoad={() => {
-                                    console.log('Image loaded successfully for trip:', trip.id)
+                                    // Image failed to load
                                   }}
                                 />
                               ) : (
