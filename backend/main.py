@@ -414,10 +414,10 @@ async def create_client(request: Request):
         print("\n📝 Step 4: Transforming data for Fora API...")
         
         # Transform data to match Fora API expectations
-        # Fix: last_name cannot be empty string, use None instead
+        # Fix: last_name cannot be empty string, use 'client' instead
         last_name = client_data.get("last_name", "")
         if last_name == "":
-            last_name = "-"
+            last_name = "client"
             
         transformed_data = {
             "first_name": client_data.get("first_name", ""),

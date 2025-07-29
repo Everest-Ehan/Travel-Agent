@@ -118,8 +118,8 @@ export default function BookingPage() {
       // Use user's email to search for existing client or create a simple client object
       const userEmail = user.email
       if (userEmail) {
-        // The client name format is: userEmail + " -" (as per backend logic)
-        const clientName = `${userEmail} -`
+              // The client name format is: userEmail + " client" (as per backend logic)
+      const clientName = `${userEmail} client`
         
         // Try to fetch cards for this user
         fetchClientCards(userClient?.id || user.id)
@@ -337,7 +337,7 @@ export default function BookingPage() {
         supplier_id: supplierId,
         supplier_program_id: supplierProgramId,
         trip_id: null,
-        trip_name: `${user!.email} -'s ${hotelName} Trip`,
+        trip_name: `${user!.email} client's ${hotelName} Trip`,
         use_advisor_contact_info: false,
         billing_address: billingAddress
       }
@@ -460,7 +460,7 @@ export default function BookingPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="font-medium text-gray-900">
-                        {user.email ? `${user.email} -` : 'User'}
+                        {user.email ? `${user.email} client` : 'User'}
                       </h3>
                       <p className="text-sm text-gray-600">
                         {user.email}
@@ -725,7 +725,7 @@ export default function BookingPage() {
       {showAddCardForm && user && (
         <SeleniumCardForm
           checkoutUrl={`https://advisor.fora.travel/partners/2ad941ab-6704-47f7-8601-a7241ea4202e/checkout/S1QAP7?start_date=${startDate}&end_date=${endDate}&adults=${adults}&rate_code=${rateCode}&rate_id=${rateId}&expected_amount=${expectedAmount}&expected_currency=${expectedCurrency}&supplier_type=hotels%2C${supplierId}&description=${encodeURIComponent(description)}&detailsCategory=Virtuoso&method=ae9ce586-c659-4f07-992e-314fb091ab2c&currency=${currency}&cart_id=${cartId}`}
-          clientName={user?.email ? `${user?.email} -` : 'User'}
+          clientName={user?.email ? `${user?.email} client` : 'User'}
           onCardCreated={handleCardCreated}
           onCancel={handleCancelCardForm}
         />
