@@ -35,12 +35,12 @@ export default function AuthCallback() {
         } else if (type === 'signup') {
           setMessage('Email verified successfully! Redirecting...')
           setTimeout(() => {
-            router.push(next || '/')
+            router.push(next || '/search')
           }, 2000)
         } else {
           setMessage('Authentication successful! Redirecting...')
           setTimeout(() => {
-            router.push(next || '/')
+            router.push(next || '/search')
           }, 2000)
         }
       } else {

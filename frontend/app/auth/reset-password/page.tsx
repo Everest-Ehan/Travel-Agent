@@ -38,7 +38,7 @@ export default function ResetPasswordPage() {
       } else {
         setMessage('Password updated successfully! Redirecting...')
         setTimeout(() => {
-          router.push('/')
+          router.push('/search')
         }, 2000)
       }
     } catch (err) {

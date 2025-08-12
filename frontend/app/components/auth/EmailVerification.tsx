@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '../../contexts/AuthContext'
 import Alert from '../ui/Alert'
 import LoadingSpinner from '../ui/LoadingSpinner'
@@ -11,6 +12,7 @@ interface EmailVerificationProps {
 }
 
 export default function EmailVerification({ email, onVerified }: EmailVerificationProps) {
+  const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
@@ -101,7 +103,10 @@ export default function EmailVerification({ email, onVerified }: EmailVerificati
               </button>
 
               <button
-                onClick={() => window.location.reload()}
+                onClick={() => {
+                  // Redirect to search page after email verification
+                  router.push('/search')
+                }}
                 className="w-full flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
               >
                 I've verified my email
