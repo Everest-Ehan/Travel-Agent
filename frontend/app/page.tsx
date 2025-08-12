@@ -20,42 +20,67 @@ export default function Home() {
   const [loadingFeatured, setLoadingFeatured] = useState(true);
 
   useEffect(() => {
-    console.log('🔄 useEffect triggered - component mounted');
+    console.log('🏠 HOME PAGE - useEffect triggered - component mounted');
+    console.log('🏠 HOME PAGE - Current loadingFeatured state:', loadingFeatured);
+    console.log('🏠 HOME PAGE - Current featuredHotels state:', featuredHotels);
     
     const fetchFeaturedHotels = async () => {
-      console.log('🚀 Starting to fetch featured hotels...');
+      console.log('🏠 HOME PAGE - 🚀 Starting to fetch featured hotels...');
+      console.log('🏠 HOME PAGE - ApiService available:', typeof ApiService);
+      console.log('🏠 HOME PAGE - fetchFeaturedHotels method available:', typeof ApiService.fetchFeaturedHotels);
+      
       try {
-        console.log('📞 Calling ApiService.fetchFeaturedHotels()...');
+        console.log('🏠 HOME PAGE - 📞 About to call ApiService.fetchFeaturedHotels()...');
         const hotels = await ApiService.fetchFeaturedHotels();
-        console.log('✅ Hotels fetched successfully:', hotels);
-        console.log('✅ Number of hotels:', hotels.length);
+        console.log('🏠 HOME PAGE - ✅ API call completed! Response received:');
+        console.log('🏠 HOME PAGE - ✅ FULL API RESPONSE:', JSON.stringify(hotels, null, 2));
+        console.log('🏠 HOME PAGE - ✅ Hotels array:', hotels);
+        console.log('🏠 HOME PAGE - ✅ Number of hotels received:', hotels ? hotels.length : 'null/undefined');
+        
+        if (hotels && hotels.length > 0) {
+          console.log('🏠 HOME PAGE - ✅ First hotel details:');
+          console.log('🏠 HOME PAGE - ✅ Hotel ID:', hotels[0].id);
+          console.log('🏠 HOME PAGE - ✅ Hotel Name:', hotels[0].name);
+          console.log('🏠 HOME PAGE - ✅ Hotel City:', hotels[0].physical_city);
+          console.log('🏠 HOME PAGE - ✅ Hotel Country:', hotels[0].physical_country);
+        }
+        
+        console.log('🏠 HOME PAGE - 🔄 Setting hotels to state...');
         setFeaturedHotels(hotels);
-        console.log('✅ Featured hotels state updated');
+        console.log('🏠 HOME PAGE - ✅ Featured hotels state updated with', hotels ? hotels.length : 0, 'hotels');
+        
       } catch (error) {
-        console.error('❌ Error fetching featured hotels:', error);
+        console.error('🏠 HOME PAGE - ❌ ERROR in fetching featured hotels:', error);
+        console.error('🏠 HOME PAGE - ❌ Error type:', typeof error);
+        console.error('🏠 HOME PAGE - ❌ Error details:', error);
         // Fallback to empty array if API fails
         setFeaturedHotels([]);
-        console.log('✅ Set empty array as fallback');
+        console.log('🏠 HOME PAGE - ✅ Set empty array as fallback due to error');
       } finally {
+        console.log('🏠 HOME PAGE - 🔄 Setting loading to false...');
         setLoadingFeatured(false);
-        console.log('✅ Loading state set to false');
+        console.log('🏠 HOME PAGE - ✅ Loading state set to false');
       }
     };
 
+    console.log('🏠 HOME PAGE - 🔄 About to call fetchFeaturedHotels immediately...');
     // Call the function immediately
     fetchFeaturedHotels();
     
     // Also add a timeout to ensure it gets called
     const timeoutId = setTimeout(() => {
-      console.log('⏰ Timeout triggered - calling fetchFeaturedHotels again');
+      console.log('🏠 HOME PAGE - ⏰ Timeout triggered - calling fetchFeaturedHotels again as backup');
       fetchFeaturedHotels();
-    }, 1000);
+    }, 2000);
 
-    return () => clearTimeout(timeoutId);
+    return () => {
+      console.log('🏠 HOME PAGE - 🧹 Cleanup: clearing timeout');
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   const handleSearchClick = () => {
-    router.push('/dashboard');
+    router.push('/search');
   };
 
   const handleFindHotelClick = () => {
@@ -74,8 +99,8 @@ export default function Home() {
 
   return (
     <div className="bg-white relative min-h-screen">
-             {/* Email Verification Banner */}
-       <EmailVerificationBanner />
+      {/* Email Verification Banner */}
+      <EmailVerificationBanner />
        
 
       
@@ -88,7 +113,11 @@ export default function Home() {
         />
       
       {/* Header */}
-      <header className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10">
+      <header className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50">
+        {/* Debug info */}
+        <div style={{ position: 'absolute', top: '-30px', left: '0', color: 'white', fontSize: '12px', zIndex: 100 }}>
+          Debug: authLoading={authLoading.toString()}, user={user ? 'logged in' : 'not logged in'}
+        </div>
         <div className="bg-black/20 backdrop-blur-sm rounded-[50px] px-8 py-3 flex items-center justify-between w-[1269px]">
           <div className="text-white text-3xl font-extrabold">LOGO</div>
           <nav className="flex items-center gap-15 text-white text-base font-semibold">
@@ -97,15 +126,42 @@ export default function Home() {
             <a href="#" className="hover:text-gray-200">Download Mobile App</a>
             </nav>
           <div className="flex items-center gap-5">
+              {/* Debug rendering */}
+              <div style={{ color: 'white', fontSize: '10px', marginRight: '10px' }}>
+                Loading: {authLoading.toString()}, User: {user ? 'Yes' : 'No'}
+              </div>
               {authLoading ? (
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
               ) : user ? (
                 <UserProfile />
               ) : (
-              <button className="bg-[#57b3ca] text-white px-8 py-2 rounded-[23px] text-sm font-semibold hover:bg-[#4a9bb0] transition-colors">
-                Login / Signup
-              </button>
-            )}
+                <button
+                  className="bg-[#57b3ca] text-white px-8 py-2 rounded-[23px] text-sm font-semibold hover:bg-[#4a9bb0] transition-colors cursor-pointer relative z-50"
+                  style={{ pointerEvents: 'auto' }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🔐 Login/Signup button clicked!');
+                    try {
+                      router.push('/auth');
+                    } catch (error) {
+                      console.error('🔐 Navigation error:', error);
+                      // Fallback to window.location if router fails
+                      window.location.href = '/auth';
+                    }
+                  }}
+                  onMouseDown={(e) => {
+                    console.log('🔐 Button mouse down event');
+                  }}
+                  onMouseUp={(e) => {
+                    console.log('🔐 Button mouse up event');
+                  }}
+                > 
+                  Login / Signup
+                </button>
+              )}
+              {/* Test button - always visible */}
+             
             <div className="bg-white rounded-[23px] w-[98px] h-[46px] flex items-center justify-center">
               <div className="w-6 h-6 text-gray-600">
                 <svg fill="currentColor" viewBox="0 0 20 15">
@@ -128,8 +184,8 @@ export default function Home() {
           Lorem ipsum dolor sit amet consectetur. Consequat fusce ac non
           vestibulum morbi turpis facilisi suscipit. Ipsum mauris feugiat arcu
           rhoncus vestibulum nunc vulputate semper feugiat.
-        </p>
-        
+          </p>
+          
         {/* Search Section - Positioned to overlap with hero image */}
         <div className="absolute -bottom-44 left-1/2 transform -translate-x-1/2 z-20">
         <div className="bg-white rounded-bl-[100px] rounded-tl-[100px] shadow-lg p-5 pt-12 pb-5 px-20 w-[1360px]">
@@ -269,12 +325,16 @@ export default function Home() {
                        ))}
                      </div>
                    </div>
-                 </div>
+                    </div>
                ))
              ) : featuredHotels.length > 0 ? (
-               // Real data
-               featuredHotels.slice(0, 3).map((hotel) => (
-                 <div key={hotel.id} className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow cursor-pointer">
+                             // Real data
+              featuredHotels.slice(0, 3).map((hotel) => (
+                <div 
+                  key={hotel.id} 
+                  className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
+                  onClick={() => router.push(`/hotel/${hotel.id}?currency=USD&start_date=2025-08-14&end_date=2025-08-22&adults=2&children_ages=&rooms=1`)}
+                >
                    <div className="h-[340px] bg-gray-200 relative">
                      {/* Hotel image from Fora API */}
                      {hotel.image ? (
@@ -294,8 +354,8 @@ export default function Home() {
                      <div className={`absolute inset-0 bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center ${hotel.image ? 'hidden' : ''}`}>
                        <div className="text-white text-4xl font-bold text-center">
                          {hotel.name.split(' ').slice(0, 2).map((word: string) => word[0]).join('')}
-                       </div>
-                     </div>
+                    </div>
+                  </div>
                      <div className="absolute top-3 right-3 w-6 h-6 opacity-30">
                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
@@ -304,12 +364,12 @@ export default function Home() {
                      <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent">
                        <div className="flex justify-between items-center">
                          <span className="text-white text-lg font-semibold">{hotel.commission_range}</span>
-                         <div className="flex gap-1">
+                      <div className="flex gap-1">
                            {hotel.labels.slice(0, 4).map((label: any, index: number) => (
                              <div key={index} className="w-2 h-2 bg-white rounded-full"></div>
-                           ))}
-                         </div>
-                       </div>
+                        ))}
+                      </div>
+                    </div>
                      </div>
                    </div>
                    <div className="p-6">
@@ -356,9 +416,9 @@ export default function Home() {
                </div>
              )}
            </div>
-        </div>
+                    </div>
       </section>
-
+                    
                     {/* Browse More Hotels Section */}
        <section className="py-24 px-4">
          <div className="max-w-[1269px] mx-auto">
@@ -372,9 +432,9 @@ export default function Home() {
               >
                 Find your Hotel
               </button>
-            </div>
-          </div>
-        </div>
+                        </div>
+                        </div>
+                      </div>
       </section>
 
                     {/* Hotel Booking Tips Section */}
@@ -395,10 +455,10 @@ export default function Home() {
                 <div className="h-[340px] bg-gray-200 rounded-xl mb-4"></div>
                 <h3 className="text-lg font-bold text-[#484848] mb-2">{tip.title}</h3>
                 <p className="text-sm text-[#9a9a9a]">{tip.category}</p>
-              </div>
-            ))}
-          </div>
-          
+                          </div>
+                        ))}
+                    </div>
+                    
           <div className="text-center">
             <button 
               onClick={handleViewAllBlogsClick}
@@ -406,8 +466,8 @@ export default function Home() {
             >
               View All Blogs
             </button>
-          </div>
-        </div>
+                    </div>
+                  </div>
       </section>
 
                     {/* Why Book With Us Section */}
@@ -427,7 +487,7 @@ export default function Home() {
               <div className="flex gap-6 mb-8">
                 <a href="#" className="text-xl font-bold text-[#484848] hover:text-[#57b3ca] transition-colors">Ask A Question</a>
                 <a href="#" className="text-xl font-bold text-[#484848] hover:text-[#57b3ca] transition-colors">Find A Property</a>
-              </div>
+                </div>
               <button 
                 onClick={handleDiscoverMoreClick}
                 className="bg-[#57b3ca] text-white px-10 py-4 rounded-[30px] font-bold hover:bg-[#4a9bb0] transition-colors"
