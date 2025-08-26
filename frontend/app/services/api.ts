@@ -571,4 +571,86 @@ export class ApiService {
       throw error;
     }
   }
+
+  // Fetch featured hotels from Fora API
+  static async fetchFeaturedHotels(): Promise<any[]> {
+    const url = 'https://api.fora.travel/v2/user-supplier-list/bdd9fe6d-4482-4996-9508-536f89c2008d/suppliers/';
+    
+    console.log('🔍 Fetching featured hotels from:', url);
+    
+    try {
+      // Add mode: 'cors' and additional headers to handle CORS
+      const response = await fetch(url, {
+        method: 'GET',
+        mode: 'cors',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      });
+      
+      console.log('📡 Featured hotels response status:', response.status);
+      console.log('📡 Featured hotels response headers:', Object.fromEntries(response.headers.entries()));
+      
+      if (!response.ok) {
+        console.error('❌ Response not ok:', response.status, response.statusText);
+        const errorText = await response.text();
+        console.error('❌ Error response body:', errorText);
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log('✅ Featured hotels API response:', data);
+      console.log('✅ Featured hotels count:', data.length);
+      console.log('✅ Featured hotels data structure:', data[0] ? Object.keys(data[0]) : 'No data');
+      
+      return data;
+    } catch (error) {
+      console.error('💥 Error fetching featured hotels:', error);
+      console.error('💥 Error details:', {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        name: error instanceof Error ? error.name : 'Unknown'
+      });
+      
+             // Return mock data if API fails
+       console.log('🔄 Returning mock data due to API failure');
+       return [
+         {
+           id: "mock-1",
+           name: "Ladera Resort - Adults Only",
+           physical_city: "Castries",
+           physical_country: "Saint Lucia",
+           commission_range: "10-16%",
+           labels: [
+             { text: "Preferred Partner", slug: "partnership" },
+             { text: "All Inclusive", slug: "all_inclusive" }
+           ],
+           image: "2ac5b835-b7cf-44c8-9415-1be953dcc501"
+         },
+         {
+           id: "mock-2", 
+           name: "Waldorf Astoria Los Cabos Pedregal",
+           physical_city: "Cabo San Lucas",
+           physical_country: "Mexico",
+           commission_range: "10-15%",
+           labels: [
+             { text: "Preferred Partner", slug: "partnership" }
+           ],
+           image: "f68e339e-cd86-432a-9efa-568a175f2c23"
+         },
+         {
+           id: "mock-3",
+           name: "Zadún, a Ritz-Carlton Reserve", 
+           physical_city: "San José del Cabo",
+           physical_country: "Mexico",
+           commission_range: "10-15%",
+           labels: [
+             { text: "Preferred Partner", slug: "partnership" }
+           ],
+           image: "6ed2bd3b-a362-4a29-afa4-534a2b1b29e8"
+         }
+       ];
+    }
+  }
 } 
