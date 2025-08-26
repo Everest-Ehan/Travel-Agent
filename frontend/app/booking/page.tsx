@@ -171,7 +171,7 @@ export default function BookingPage() {
   const fetchClientCards = async (clientId: string) => {
     try {
       setLoadingCards(true)
-      console.log('🔍 Fetching cards for client ID:', clientId)
+    
       const response = await ApiService.getClientCards(clientId)
       setClientCards(response.results || [])
       setSelectedCard(null) // Reset selected card when client changes
@@ -184,12 +184,12 @@ export default function BookingPage() {
   }
 
   const handleAddCard = () => {
-    console.log('💳 Adding card for user ID:', user?.id)
+  
     setShowAddCardForm(true)
   }
 
   const handleCardCreated = () => {
-    console.log('✅ Card created, refreshing cards for user ID:', user?.id)
+  
     setShowAddCardForm(false)
     if (user) {
       fetchClientCards(userClient?.id || user.id)
@@ -212,7 +212,7 @@ export default function BookingPage() {
     if (revealedCards[cardId]) {
       const card = clientCards.find(c => c.id === cardId)
       if (card) {
-        console.log('Opening modal with existing data:', { cardData: revealedCards[cardId], cardInfo: card })
+      
         setSelectedRevealedCard({
           cardData: revealedCards[cardId],
           cardInfo: card
@@ -224,10 +224,10 @@ export default function BookingPage() {
 
     try {
       setRevealingCard(cardId)
-      console.log('🔍 Revealing card:', cardId, 'for user:', user.id)
+    
       
       const revealedData = await ApiService.revealClientCard(userClient?.id || user.id, cardId)
-      console.log('✅ Card revealed:', revealedData)
+    
       
       setRevealedCards(prev => ({
         ...prev,
@@ -237,7 +237,7 @@ export default function BookingPage() {
       // Show the modal with the revealed data
       const card = clientCards.find(c => c.id === cardId)
       if (card) {
-        console.log('Opening modal with new data:', { cardData: revealedData, cardInfo: card })
+      
         setSelectedRevealedCard({
           cardData: revealedData,
           cardInfo: card
@@ -246,7 +246,7 @@ export default function BookingPage() {
       }
       
       // Show success message (you could integrate with a toast library)
-      console.log('Card information revealed successfully!')
+    
     } catch (error) {
       console.error('❌ Error revealing card:', error)
       // Show error message to user
@@ -318,7 +318,7 @@ export default function BookingPage() {
         billingAddress = extractBillingAddress(revealedCards[selectedCard.id])
       } else {
         // Reveal card to get billing address
-        console.log('🔍 Revealing card to get billing address:', selectedCard.id)
+      
         const revealedData = await ApiService.revealClientCard(userClient?.id || user!.id, selectedCard.id)
         setRevealedCards(prev => ({
           ...prev,
@@ -355,16 +355,8 @@ export default function BookingPage() {
         billing_address: billingAddress
       }
       
-      console.log('📦 Booking request with billing address:', bookingRequest)
-        console.log('🔍 Debug - cartId value:', cartId)
-  console.log('🔍 Debug - cartId type:', typeof cartId)
-  console.log('🔍 Debug - cartId length:', cartId.length)
-  console.log('🔍 Debug - rateCode:', rateCode)
-  console.log('🔍 Debug - rateId:', rateId)
-  console.log('🔍 Debug - supplierId:', supplierId)
-  console.log('🔍 Debug - cartId from URL:', cartId)
-  console.log('🔍 Debug - expectedAmount:', expectedAmount)
-  console.log('🔍 Debug - expectedCurrency:', expectedCurrency)
+    
+      
       
       const result = await ApiService.createBooking(bookingRequest)
       router.push(`/booking/success?booking_id=${result.id}`)
@@ -373,8 +365,7 @@ export default function BookingPage() {
       let errorMessage = 'Failed to create booking. Please try again.'
       
       errorMessage = error.detail
-      console.log('Booking error:', errorMessage)
-      console.log('Booking error:', error)
+      
       
       // Handle specific price mismatch error
       if (error.detail && error.detail.includes('Price change')) {
@@ -715,6 +706,7 @@ export default function BookingPage() {
                             ? 'border-green-500 bg-green-50'
                             : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                         }`}
+
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-3">
@@ -1040,8 +1032,7 @@ export default function BookingPage() {
                       return matchesSearch
                     })
                     .map((trip) => {
-                      console.log('Trip data:', trip)
-                      console.log('Trip image:', trip.image)
+                      
                       const startDate = trip.start_date ? new Date(trip.start_date) : null
                       const endDate = trip.end_date ? new Date(trip.end_date) : null
                       const nights = trip.num_nights || (startDate && endDate ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) : 0)
@@ -1066,11 +1057,11 @@ export default function BookingPage() {
                                   alt="Trip"
                                   className="w-full h-full object-cover"
                                   onError={(e) => {
-                                    console.log('Image failed to load:', e.currentTarget.src)
+                                  
                                     e.currentTarget.src = '/placeholder-trip.jpg'
                                   }}
                                   onLoad={() => {
-                                    console.log('Image loaded successfully for trip:', trip.id)
+                                  
                                   }}
                                 />
                               ) : (

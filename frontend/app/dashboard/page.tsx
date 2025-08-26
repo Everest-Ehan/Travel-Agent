@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { useSearchParams, useRouter } from 'next/navigation'
 import UserProfile from '../components/auth/UserProfile'
 import ClientManagement from '../components/ClientManagement'
 import TripCard from '../components/TripCard'
@@ -11,6 +12,8 @@ import { ApiService } from '../services/api'
 
 export default function Dashboard() {
   const { user, userClient } = useAuth()
+  const searchParams = useSearchParams()
+  const router = useRouter()
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
   const [activeTab, setActiveTab] = useState<'overview' | 'clients' | 'trips'>('overview')
   
@@ -21,6 +24,14 @@ export default function Dashboard() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'upcoming' | 'past' | 'cancelled'>('all')
   
 
+
+  // Handle tab parameter from URL
+  useEffect(() => {
+    const tabParam = searchParams.get('tab')
+    if (tabParam && ['overview', 'clients', 'trips'].includes(tabParam)) {
+      setActiveTab(tabParam as 'overview' | 'clients' | 'trips')
+    }
+  }, [searchParams])
 
   // Fetch trips when user is available and trips tab is active
   useEffect(() => {
@@ -66,7 +77,17 @@ export default function Dashboard() {
 
   const statusCounts = getStatusCounts()
 
-    const handleTripClick = (trip: Trip) => {
+  const handleTabChange = (tab: 'overview' | 'clients' | 'trips') => {
+    setActiveTab(tab)
+    // Update URL with the new tab
+    if (tab === 'overview') {
+      router.push('/dashboard')
+    } else {
+      router.push(`/dashboard?tab=${tab}`)
+    }
+  }
+
+  const handleTripClick = (trip: Trip) => {
     // Navigate to the trip details page
     window.location.href = `/trip/${trip.id}`
   }
@@ -107,7 +128,7 @@ export default function Dashboard() {
         <div className="mb-8">
           <nav className="flex space-x-8">
             <button
-              onClick={() => setActiveTab('overview')}
+                              onClick={() => handleTabChange('overview')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'overview'
                   ? 'border-indigo-500 text-indigo-600'
@@ -116,24 +137,24 @@ export default function Dashboard() {
             >
               Overview
             </button>
-            <button
-              onClick={() => setActiveTab('trips')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'trips'
-                  ? 'border-indigo-500 text-indigo-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
+                          <button
+                onClick={() => handleTabChange('trips')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'trips'
+                    ? 'border-indigo-500 text-indigo-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
               Trips ({statusCounts.all})
             </button>
-            <button
-              onClick={() => setActiveTab('clients')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'clients'
-                  ? 'border-indigo-500 text-indigo-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
+                          <button
+                onClick={() => handleTabChange('clients')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'clients'
+                    ? 'border-indigo-500 text-indigo-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
               Client Management
             </button>
           </nav>
@@ -272,7 +293,7 @@ export default function Dashboard() {
                     </button>
 
                     <button
-                      onClick={() => setActiveTab('clients')}
+                      onClick={() => handleTabChange('clients')}
                       className="w-full flex items-center p-3 rounded-lg border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 transition-colors"
                     >
                       <div className="bg-blue-100 rounded-lg p-2 mr-3">

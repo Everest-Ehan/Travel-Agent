@@ -16,7 +16,6 @@ interface CardRevealModalProps {
 }
 
 export default function CardRevealModal({ isOpen, onClose, cardData, cardInfo }: CardRevealModalProps) {
-  console.log('CardRevealModal props:', { isOpen, cardData, cardInfo })
   
   // Close modal on escape key
   useEffect(() => {
@@ -38,11 +37,8 @@ export default function CardRevealModal({ isOpen, onClose, cardData, cardInfo }:
   }, [isOpen, onClose])
 
   if (!isOpen) {
-    console.log('Modal not showing - isOpen is false')
     return null
   }
-
-  console.log('Modal should be showing')
 
   const formatCardNumber = () => {
     if (!cardData?.card_data?.first_6 || !cardData?.card_data?.last_4) return '**** **** **** ****'

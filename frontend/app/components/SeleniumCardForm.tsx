@@ -99,25 +99,25 @@ export default function SeleniumCardForm({
 
   const simulateProgress = () => {
     const steps = [
-      { message: "Setting up Chrome driver...", percentage: 5 },
-      { message: "Chrome driver ready", percentage: 10 },
-      { message: "Reading session token...", percentage: 15 },
-      { message: "Loading home page...", percentage: 20 },
-      { message: "Injecting login cookies...", percentage: 25 },
-      { message: "Login successful", percentage: 30 },
-      { message: "Navigating to checkout page...", percentage: 35 },
-      { message: `Selecting client '${clientName}'...`, percentage: 40 },
-      { message: "Client selected", percentage: 45 },
-      { message: "Opening card form...", percentage: 50 },
-      { message: "Card form opened", percentage: 55 },
-      { message: "Filling card-tokenex-element...", percentage: 60 },
-      { message: "Filled card-tokenex-element", percentage: 65 },
-      { message: "Filling cvv-tokenex-element...", percentage: 70 },
-      { message: "Filled cvv-tokenex-element", percentage: 75 },
-      { message: "Filling card form...", percentage: 80 },
-      { message: "Card form filled", percentage: 85 },
-      { message: "Submitting form...", percentage: 90 },
-      { message: "Form submitted successfully", percentage: 100 }
+      { message: "Initializing payment processing...", percentage: 5 },
+      { message: "Establishing secure connection...", percentage: 10 },
+      { message: "Validating payment gateway...", percentage: 15 },
+      { message: "Loading payment interface...", percentage: 20 },
+      { message: "Authenticating payment system...", percentage: 25 },
+      { message: "Authentication successful", percentage: 30 },
+      { message: "Preparing payment form...", percentage: 35 },
+      { message: "Configuring payment details...", percentage: 40 },
+      { message: "Payment details configured", percentage: 45 },
+      { message: "Opening payment form...", percentage: 50 },
+      { message: "Payment form ready", percentage: 55 },
+      { message: "Processing card information...", percentage: 60 },
+      { message: "Card information processed", percentage: 65 },
+      { message: "Validating security details...", percentage: 70 },
+      { message: "Security validation complete", percentage: 75 },
+      { message: "Submitting payment information...", percentage: 80 },
+      { message: "Payment information submitted", percentage: 85 },
+      { message: "Finalizing payment...", percentage: 90 },
+      { message: "Payment completed successfully", percentage: 100 }
     ]
 
     let currentStep = 0
@@ -151,10 +151,10 @@ export default function SeleniumCardForm({
             <div className="mb-6">
               <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Creating Card with Selenium
+                Processing Payment Card
               </h3>
               <p className="text-sm text-gray-600 mb-4">
-                This process takes about 30 seconds. Please wait...
+                Please wait while we process your payment information...
               </p>
             </div>
 
@@ -208,12 +208,12 @@ export default function SeleniumCardForm({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Card Created Successfully!
-            </h3>
-            <p className="text-sm text-gray-600 mb-4">
-              The card has been created using Selenium automation.
-            </p>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Payment Card Added Successfully!
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Your payment card has been successfully saved.
+              </p>
             {duration && (
               <p className="text-xs text-gray-500 mb-4">
                 Total time: {duration}
@@ -241,9 +241,9 @@ export default function SeleniumCardForm({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Card Creation Failed
-            </h3>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Unable to Add Payment Card
+              </h3>
             <p className="text-sm text-gray-600 mb-4">
               {error}
             </p>
@@ -271,7 +271,7 @@ export default function SeleniumCardForm({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">Add Card with Selenium</h3>
+          <h3 className="text-lg font-semibold text-gray-900">Add Payment Card</h3>
           <button
             onClick={onCancel}
             className="text-gray-400 hover:text-gray-600"
@@ -282,21 +282,7 @@ export default function SeleniumCardForm({
           </button>
         </div>
 
-        {/* Info Banner */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <div className="flex items-start">
-            <svg className="w-5 h-5 text-blue-600 mt-0.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <div>
-              <h4 className="text-sm font-medium text-blue-900 mb-1">Selenium Automation</h4>
-              <p className="text-sm text-blue-700">
-                This will use Selenium to automatically fill out the card form on the Fora Travel website. 
-                The process takes about 30 seconds and will show real-time progress updates.
-              </p>
-            </div>
-          </div>
-        </div>
+
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Card Number */}
@@ -445,26 +431,7 @@ export default function SeleniumCardForm({
             </div>
           </div>
 
-          {/* Client Info */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-gray-900 mb-2">Automation Details</h4>
-            <div className="space-y-2 text-sm text-gray-600">
-              <div className="flex justify-between">
-                <span>Checkout URL:</span>
-                <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
-                  {checkoutUrl.substring(0, 50)}...
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Client:</span>
-                <span>{clientName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Method:</span>
-                <span>Selenium Automation</span>
-              </div>
-            </div>
-          </div>
+
 
           {/* Submit Button */}
           <div className="flex space-x-3 pt-4">
@@ -479,7 +446,7 @@ export default function SeleniumCardForm({
               type="submit"
               className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
             >
-              Create Card with Selenium
+              Save Payment Card
             </button>
           </div>
         </form>
