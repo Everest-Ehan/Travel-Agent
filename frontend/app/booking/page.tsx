@@ -651,8 +651,8 @@ export default function BookingPage() {
 
             {/* Card Selection */}
             {user && (
-              <div className="bg-white rounded-xl shadow-lg border border-gray-200">
-                <div className="p-6 border-b border-gray-200">
+            <div className="bg-white rounded-xl shadow-lg border border-gray-200">
+              <div className="p-6 border-b border-gray-200">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-semibold text-gray-900">Select Payment Card</h2>
                     <button 
@@ -666,62 +666,63 @@ export default function BookingPage() {
                       </svg>
                     </button>
                   </div>
-                  <button 
-                    onClick={handleAddCard}
-                    className="w-full mb-4 bg-green-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-green-700 transition-colors text-sm"
-                  >
-                    <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                <button 
+                  onClick={handleAddCard}
+                  className="w-full mb-4 bg-green-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-green-700 transition-colors text-sm"
+                >
+                  <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Add New Card (Selenium)
+                </button>
+              </div>
+              <div className="p-6">
+                {loadingCards ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600 mx-auto"></div>
+                    <p className="text-gray-600 mt-2">Loading cards...</p>
+                  </div>
+                ) : clientCards.length === 0 ? (
+                  <div className="text-center py-8">
+                    <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                     </svg>
-                    Add New Card
-                  </button>
-                </div>
-                <div className="p-6">
-                  {loadingCards ? (
-                    <div className="text-center py-8">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600 mx-auto"></div>
-                      <p className="text-gray-600 mt-2">Loading cards...</p>
-                    </div>
-                  ) : clientCards.length === 0 ? (
-                    <div className="text-center py-8">
-                      <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                      </svg>
-                      <p className="text-gray-600 mb-4">No cards found for this client</p>
-                      <button
-                        onClick={handleAddCard}
-                        className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                    <p className="text-gray-600 mb-4">No cards found for this client</p>
+                    <button
+                      onClick={handleAddCard}
+                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                      Add First Card
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-64 overflow-y-auto">
+                    {clientCards.map((card) => (
+                      <div
+                        key={card.id}
+                        onClick={() => setSelectedCard(card)}
+                        className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                          selectedCard?.id === card.id
+                            ? 'border-green-500 bg-green-50'
+                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                        }`}
+
                       >
-                        Add First Card
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-3 max-h-64 overflow-y-auto">
-                      {clientCards.map((card) => (
-                        <div
-                          key={card.id}
-                          onClick={() => setSelectedCard(card)}
-                          className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                            selectedCard?.id === card.id
-                              ? 'border-green-500 bg-green-50'
-                              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                              <span className="text-2xl">{getCardLogo(card.card_logo)}</span>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <span className="text-2xl">{getCardLogo(card.card_logo)}</span>
                               <div className="flex-1">
-                                <h3 className="font-medium text-gray-900">
-                                  {card.holder_name}
-                                </h3>
-                                <p className="text-sm text-gray-600">
-                                  **** **** **** {card.last_4}
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                  Expires {card.expire_month}/{card.expire_year}
-                                </p>
-                              </div>
+                              <h3 className="font-medium text-gray-900">
+                                {card.holder_name}
+                              </h3>
+                              <p className="text-sm text-gray-600">
+                                **** **** **** {card.last_4}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                Expires {card.expire_month}/{card.expire_year}
+                              </p>
                             </div>
+                          </div>
                             <div className="flex items-center space-x-2">
                               {/* View Card Details button */}
                               <button
@@ -763,19 +764,19 @@ export default function BookingPage() {
                               </button>
                               
                               {/* Selection indicator */}
-                              {selectedCard?.id === card.id && (
-                                <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                              )}
+                          {selectedCard?.id === card.id && (
+                            <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
                             </div>
-                          </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
+            </div>
             )}
           </div>
 
@@ -1143,4 +1144,4 @@ export default function BookingPage() {
       )}
     </div>
   )
-}
+} 

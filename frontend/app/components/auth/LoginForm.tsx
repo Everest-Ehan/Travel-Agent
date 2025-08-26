@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '../../contexts/AuthContext'
 import PasswordReset from './PasswordReset'
 import Alert from '../ui/Alert'
@@ -11,6 +12,7 @@ interface LoginFormProps {
 }
 
 export default function LoginForm({ onSwitchToSignUp }: LoginFormProps) {
+  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -30,6 +32,8 @@ export default function LoginForm({ onSwitchToSignUp }: LoginFormProps) {
         setLoading(false) // Reset loading state on error
       } else {
         setLoading(false)
+        // Redirect to search page after successful login
+        router.push('/search')
       }
     } catch (err) {
       setError('An unexpected error occurred')
@@ -46,8 +50,10 @@ export default function LoginForm({ onSwitchToSignUp }: LoginFormProps) {
       if (error) {
         setError(error.message)
         setLoading(false) // Reset loading state on error
+      } else {
+        // Redirect to search page after successful Google login
+        router.push('/search')
       }
-      // If successful, OAuth will handle the redirect
     } catch (err) {
       setError('An unexpected error occurred')
       setLoading(false) // Reset loading state on error

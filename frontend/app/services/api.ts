@@ -577,9 +577,9 @@ export class ApiService {
     const url = 'https://api.fora.travel/v2/user-supplier-list/bdd9fe6d-4482-4996-9508-536f89c2008d/suppliers/';
     
     console.log('🔍 Fetching featured hotels from:', url);
+    console.log('🔍 Starting API call...');
     
     try {
-      // Add mode: 'cors' and additional headers to handle CORS
       const response = await fetch(url, {
         method: 'GET',
         mode: 'cors',
@@ -590,6 +590,7 @@ export class ApiService {
       });
       
       console.log('📡 Featured hotels response status:', response.status);
+      console.log('📡 Featured hotels response ok:', response.ok);
       console.log('📡 Featured hotels response headers:', Object.fromEntries(response.headers.entries()));
       
       if (!response.ok) {
@@ -599,58 +600,59 @@ export class ApiService {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       
-      const data = await response.json();
-      console.log('✅ Featured hotels API response:', data);
-      console.log('✅ Featured hotels count:', data.length);
-      console.log('✅ Featured hotels data structure:', data[0] ? Object.keys(data[0]) : 'No data');
+      // First get the raw text response
+      console.log('🔍 Getting raw response text...');
+      const responseText = await response.text();
+      console.log('📝 RAW RESPONSE TEXT:', responseText);
       
+      // Then parse it as JSON
+      console.log('🔍 About to parse JSON response...');
+      console.log('🔍 Response text length:', responseText.length);
+      console.log('🔍 Response text starts with:', responseText.substring(0, 100));
+      
+      let data;
+      try {
+        data = JSON.parse(responseText);
+        console.log('✅ JSON parsing successful!');
+      } catch (parseError) {
+        console.error('💥 JSON parsing failed:', parseError);
+        console.error('💥 Raw text that failed to parse:', responseText);
+        throw new Error(`Failed to parse JSON response: ${parseError}`);
+      }
+      console.log('✅ Featured hotels API SUCCESS!');
+      console.log('✅ RAW API RESPONSE (FULL):', data);
+      console.log('✅ RAW API RESPONSE (STRINGIFIED):', JSON.stringify(data, null, 2));
+      console.log('✅ Response type:', typeof data);
+      console.log('✅ Response is array:', Array.isArray(data));
+      console.log('✅ Featured hotels count:', data ? data.length : 'data is null/undefined');
+      console.log('✅ Featured hotels data structure:', data && data[0] ? Object.keys(data[0]) : 'No first item or data is empty');
+      
+      // Log each hotel's ID to verify
+      if (data && data.length > 0) {
+        console.log('✅ Hotel IDs from API:');
+        data.slice(0, 5).forEach((hotel: any, index: number) => {
+          console.log(`   ${index + 1}. ID: ${hotel.id} | Name: ${hotel.name}`);
+        });
+      }
+      
+      console.log('✅ Returning real API data:', data.length, 'hotels');
       return data;
-    } catch (error) {
-      console.error('💥 Error fetching featured hotels:', error);
-      console.error('💥 Error details:', {
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        name: error instanceof Error ? error.name : 'Unknown'
-      });
       
-             // Return mock data if API fails
-       console.log('🔄 Returning mock data due to API failure');
-       return [
-         {
-           id: "mock-1",
-           name: "Ladera Resort - Adults Only",
-           physical_city: "Castries",
-           physical_country: "Saint Lucia",
-           commission_range: "10-16%",
-           labels: [
-             { text: "Preferred Partner", slug: "partnership" },
-             { text: "All Inclusive", slug: "all_inclusive" }
-           ],
-           image: "2ac5b835-b7cf-44c8-9415-1be953dcc501"
-         },
-         {
-           id: "mock-2", 
-           name: "Waldorf Astoria Los Cabos Pedregal",
-           physical_city: "Cabo San Lucas",
-           physical_country: "Mexico",
-           commission_range: "10-15%",
-           labels: [
-             { text: "Preferred Partner", slug: "partnership" }
-           ],
-           image: "f68e339e-cd86-432a-9efa-568a175f2c23"
-         },
-         {
-           id: "mock-3",
-           name: "Zadún, a Ritz-Carlton Reserve", 
-           physical_city: "San José del Cabo",
-           physical_country: "Mexico",
-           commission_range: "10-15%",
-           labels: [
-             { text: "Preferred Partner", slug: "partnership" }
-           ],
-           image: "6ed2bd3b-a362-4a29-afa4-534a2b1b29e8"
-         }
-       ];
+    } catch (error) {
+      console.error('💥 FAILED to fetch featured hotels:', error);
+      console.error('💥 Error type:', error && typeof error === 'object' && 'constructor' in error ? (error as any).constructor.name : typeof error);
+      console.error('💥 Error message:', error instanceof Error ? error.message : String(error));
+      console.error('💥 Error stack:', error instanceof Error ? error.stack : undefined);
+      
+      // Check if it's a CORS error
+      if (error instanceof TypeError && error.message && error.message.includes('fetch')) {
+        console.error('🚨 This appears to be a CORS or network error');
+        console.error('🚨 The browser may be blocking the external API call');
+      }
+      
+      // No mock data - return empty array or throw error
+      console.log('🔄 API failed, returning empty array - no mock data');
+      return [];
     }
   }
 } 

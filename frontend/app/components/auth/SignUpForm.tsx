@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '../../contexts/AuthContext'
 import EmailVerification from './EmailVerification'
 import Alert from '../ui/Alert'
@@ -11,6 +12,7 @@ interface SignUpFormProps {
 }
 
 export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
+  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -46,6 +48,8 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
       } else {
         setShowEmailVerification(true)
         setLoading(false)
+        // Note: For signup, we show email verification first
+        // The redirect will happen after email verification
       }
     } catch (err) {
       setError('An unexpected error occurred')
@@ -62,8 +66,10 @@ export default function SignUpForm({ onSwitchToLogin }: SignUpFormProps) {
       if (error) {
         setError(error.message)
         setLoading(false) // Reset loading state on error
+      } else {
+        // Redirect to search page after successful Google signup
+        router.push('/search')
       }
-      // If successful, OAuth will handle the redirect
     } catch (err) {
       setError('An unexpected error occurred')
       setLoading(false) // Reset loading state on error
