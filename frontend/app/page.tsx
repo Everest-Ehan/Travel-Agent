@@ -7,77 +7,72 @@ import UserProfile from './components/auth/UserProfile'
 import EmailVerificationBanner from './components/auth/EmailVerificationBanner'
 import { ApiService } from './services/api'
 
-// Debug: Check if ApiService is imported correctly
-console.log('🔧 ApiService imported:', typeof ApiService);
-console.log('🔧 ApiService.fetchFeaturedHotels:', typeof ApiService.fetchFeaturedHotels);
-
 export default function Home() {
-  console.log('🏠 Home component rendering...');
   
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+  const { user, session, loading: authLoading } = useAuth();
   const [featuredHotels, setFeaturedHotels] = useState<any[]>([]);
   const [loadingFeatured, setLoadingFeatured] = useState(true);
+  const [suppliersFetched, setSuppliersFetched] = useState(false);
+  const [supplierHotels, setSupplierHotels] = useState<any[]>([]);
+
+  // Generate current date and 2 days from now
+  const getCurrentDate = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+  };
+
+  const getCheckOutDate = () => {
+    const today = new Date();
+    const checkOut = new Date(today);
+    checkOut.setDate(today.getDate() + 2);
+    return checkOut.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+  };
+
+  const formatDateForDisplay = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
 
   useEffect(() => {
-    console.log('🏠 HOME PAGE - useEffect triggered - component mounted');
-    console.log('🏠 HOME PAGE - Current loadingFeatured state:', loadingFeatured);
-    console.log('🏠 HOME PAGE - Current featuredHotels state:', featuredHotels);
-    
-    const fetchFeaturedHotels = async () => {
-      console.log('🏠 HOME PAGE - 🚀 Starting to fetch featured hotels...');
-      console.log('🏠 HOME PAGE - ApiService available:', typeof ApiService);
-      console.log('🏠 HOME PAGE - fetchFeaturedHotels method available:', typeof ApiService.fetchFeaturedHotels);
+    const fetchSupplierList = async () => {
+      // Check if user is authenticated
+      if (!user) {
+        console.log('🏠 No authenticated user, skipping supplier fetch');
+        setSuppliersFetched(false); // Reset when no user
+        return;
+      }
+      
+      // Prevent multiple API calls for the same user
+      if (suppliersFetched) {
+        console.log('🏠 Suppliers already fetched, skipping...');
+        return;
+      }
       
       try {
-        console.log('🏠 HOME PAGE - 📞 About to call ApiService.fetchFeaturedHotels()...');
-        const hotels = await ApiService.fetchFeaturedHotels();
-        console.log('🏠 HOME PAGE - ✅ API call completed! Response received:');
-        console.log('🏠 HOME PAGE - ✅ FULL API RESPONSE:', JSON.stringify(hotels, null, 2));
-        console.log('🏠 HOME PAGE - ✅ Hotels array:', hotels);
-        console.log('🏠 HOME PAGE - ✅ Number of hotels received:', hotels ? hotels.length : 'null/undefined');
-        
-        if (hotels && hotels.length > 0) {
-          console.log('🏠 HOME PAGE - ✅ First hotel details:');
-          console.log('🏠 HOME PAGE - ✅ Hotel ID:', hotels[0].id);
-          console.log('🏠 HOME PAGE - ✅ Hotel Name:', hotels[0].name);
-          console.log('🏠 HOME PAGE - ✅ Hotel City:', hotels[0].physical_city);
-          console.log('🏠 HOME PAGE - ✅ Hotel Country:', hotels[0].physical_country);
-        }
-        
-        console.log('🏠 HOME PAGE - 🔄 Setting hotels to state...');
-        setFeaturedHotels(hotels);
-        console.log('🏠 HOME PAGE - ✅ Featured hotels state updated with', hotels ? hotels.length : 0, 'hotels');
-        
+        console.log('🏠 Fetching supplier list...');
+        const suppliers = await ApiService.fetchSupplierList();
+        console.log('🏠 Suppliers fetched:', suppliers.length);
+        console.log('🏠 Supplier List Data:', suppliers);
+        setSupplierHotels(suppliers); // Store supplier data
+        setSuppliersFetched(true); // Mark as fetched
       } catch (error) {
-        console.error('🏠 HOME PAGE - ❌ ERROR in fetching featured hotels:', error);
-        console.error('🏠 HOME PAGE - ❌ Error type:', typeof error);
-        console.error('🏠 HOME PAGE - ❌ Error details:', error);
-        // Fallback to empty array if API fails
-        setFeaturedHotels([]);
-        console.log('🏠 HOME PAGE - ✅ Set empty array as fallback due to error');
-      } finally {
-        console.log('🏠 HOME PAGE - 🔄 Setting loading to false...');
-        setLoadingFeatured(false);
-        console.log('🏠 HOME PAGE - ✅ Loading state set to false');
+        console.error('🏠 Error fetching suppliers:', error);
       }
     };
 
-    console.log('🏠 HOME PAGE - 🔄 About to call fetchFeaturedHotels immediately...');
-    // Call the function immediately
-    fetchFeaturedHotels();
+    // Only fetch supplier data if user is authenticated and not already fetched
+    if (user && !suppliersFetched) {
+      fetchSupplierList();
+    }
     
-    // Also add a timeout to ensure it gets called
-    const timeoutId = setTimeout(() => {
-      console.log('🏠 HOME PAGE - ⏰ Timeout triggered - calling fetchFeaturedHotels again as backup');
-      fetchFeaturedHotels();
-    }, 2000);
-
-    return () => {
-      console.log('🏠 HOME PAGE - 🧹 Cleanup: clearing timeout');
-      clearTimeout(timeoutId);
-    };
-  }, []);
+    // Set loading to false since we're not fetching hotels anymore
+    setLoadingFeatured(false);
+  }, [user, suppliersFetched]);
 
   const handleSearchClick = () => {
     router.push('/search');
@@ -114,10 +109,6 @@ export default function Home() {
       
       {/* Header */}
       <header className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50">
-        {/* Debug info */}
-        <div style={{ position: 'absolute', top: '-30px', left: '0', color: 'white', fontSize: '12px', zIndex: 100 }}>
-          Debug: authLoading={authLoading.toString()}, user={user ? 'logged in' : 'not logged in'}
-        </div>
         <div className="bg-black/20 backdrop-blur-sm rounded-[50px] px-8 py-3 flex items-center justify-between w-[1269px]">
           <div className="text-white text-3xl font-extrabold">LOGO</div>
           <nav className="flex items-center gap-15 text-white text-base font-semibold">
@@ -126,10 +117,6 @@ export default function Home() {
             <a href="#" className="hover:text-gray-200">Download Mobile App</a>
             </nav>
           <div className="flex items-center gap-5">
-              {/* Debug rendering */}
-              <div style={{ color: 'white', fontSize: '10px', marginRight: '10px' }}>
-                Loading: {authLoading.toString()}, User: {user ? 'Yes' : 'No'}
-              </div>
               {authLoading ? (
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
               ) : user ? (
@@ -159,10 +146,8 @@ export default function Home() {
                 > 
                   Login / Signup
                 </button>
-              )}
-              {/* Test button - always visible */}
-             
-            <div className="bg-white rounded-[23px] w-[98px] h-[46px] flex items-center justify-center">
+                  )}
+                <div className="bg-white rounded-[23px] w-[98px] h-[46px] flex items-center justify-center">
               <div className="w-6 h-6 text-gray-600">
                 <svg fill="currentColor" viewBox="0 0 20 15">
                   <path d="M0 1C0 0.734784 0.105357 0.48043 0.292893 0.292893C0.48043 0.105357 0.734784 0 1 0H19C19.2652 0 19.5196 0.105357 19.7071 0.292893C19.8946 0.48043 20 0.734784 20 1C20 1.26522 19.8946 1.51957 19.7071 1.70711C19.5196 1.89464 19.2652 2 19 2H1C0.734784 2 0.48043 1.89464 0.292893 1.70711C0.105357 1.51957 0 1.26522 0 1V1Z"/>
@@ -228,7 +213,7 @@ export default function Home() {
                 </div>
                 <span className="text-lg text-black">Check-in</span>
               </div>
-              <div className="text-2xl font-medium text-[#121212] mb-2">24 July 2022</div>
+              <div className="text-2xl font-medium text-[#121212] mb-2">{formatDateForDisplay(getCurrentDate())}</div>
               <div className="text-lg opacity-30 text-[#121212]">Select date</div>
               </div>
               
@@ -242,7 +227,7 @@ export default function Home() {
                 </div>
                 <span className="text-lg text-black">Check-out</span>
               </div>
-              <div className="text-2xl font-medium text-[#121212] mb-2">28 July 2022</div>
+              <div className="text-2xl font-medium text-[#121212] mb-2">{formatDateForDisplay(getCheckOutDate())}</div>
               <div className="text-lg opacity-30 text-[#121212]">Select date</div>
             </div>
 
@@ -261,8 +246,59 @@ export default function Home() {
             </div>
       </section>
 
+                    {/* Features Section */}
+       <section className="pt-32 pb-24 px-4 bg-white mt-40">
+         <div className="max-w-[1269px] mx-auto">
+           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+             {/* Best Price Guarantee */}
+             <div className="text-center p-8">
+               <div className="w-20 h-20 bg-[#57b3ca] rounded-full flex items-center justify-center mx-auto mb-6">
+                 <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                 </svg>
+               </div>
+               <h3 className="text-2xl font-bold text-[#2e2e2e] mb-4">Best price guarantee</h3>
+               <p className="text-[#666666] leading-relaxed">
+                 Lorem ipsum dolor sit amet consectetur. In purus lacus feugiat ridiculus pulvinar vulputate. Sit neque sed ut nisl ornare enim tortor varius dictum.
+               </p>
+             </div>
+
+             {/* Expertly Hand-picked Hotels */}
+             <div className="text-center p-8">
+               <div className="w-20 h-20 bg-[#57b3ca] rounded-full flex items-center justify-center mx-auto mb-6 relative">
+                 <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                 </svg>
+                 <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-white rounded-full flex items-center justify-center">
+                   <svg className="w-3 h-3 text-[#57b3ca]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                   </svg>
+                 </div>
+               </div>
+               <h3 className="text-2xl font-bold text-[#2e2e2e] mb-4">Expertly hand-picked hotels</h3>
+               <p className="text-[#666666] leading-relaxed">
+                 Lorem ipsum dolor sit amet consectetur. In purus lacus feugiat ridiculus pulvinar vulputate. Sit neque sed ut nisl ornare enim tortor varius dictum.
+               </p>
+             </div>
+
+             {/* Added Extras */}
+             <div className="text-center p-8">
+               <div className="w-20 h-20 bg-[#57b3ca] rounded-full flex items-center justify-center mx-auto mb-6">
+                 <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                 </svg>
+               </div>
+               <h3 className="text-2xl font-bold text-[#2e2e2e] mb-4">Added extras</h3>
+               <p className="text-[#666666] leading-relaxed">
+                 Lorem ipsum dolor sit amet consectetur. In purus lacus feugiat ridiculus pulvinar vulputate. Sit neque sed ut nisl ornare enim tortor varius dictum.
+               </p>
+             </div>
+           </div>
+         </div>
+       </section>
+
                     {/* Top Rated Hotels Section */}
-       <section className="pt-64 pb-24 px-4">
+       <section className="pt-24 pb-24 px-4">
          <div className="max-w-[1269px] mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-[#2e2e2e] mb-6">Top Rated Hotels</h2>
@@ -270,235 +306,208 @@ export default function Home() {
           </div>
           
           <div className="grid grid-cols-4 gap-8">
-            {[
-              { name: 'The St. Regis Atlanta', location: 'Atlanta, GA' },
-              { name: 'Montage Beverly Hills', location: 'Beverly Hills, CA' },
-              { name: 'St. Regis Washington, D.C.', location: 'Washington, D.C.' },
-              { name: 'Bellagio', location: 'Las Vegas, NV' }
-            ].map((hotel, index) => (
-              <div key={index} className="relative group cursor-pointer">
-                <div className="h-[340px] bg-gray-200 rounded-lg overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                  <div className="absolute top-3 right-3 w-6 h-6 opacity-30">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
+            {supplierHotels.length > 0 ? (
+              // Real data from supplier API
+              supplierHotels.slice(0, 4).map((hotel) => (
+                <div 
+                  key={hotel.id} 
+                  className="relative group cursor-pointer"
+                  onClick={() => router.push(`/hotel/${hotel.id}?currency=USD&start_date=${getCurrentDate()}&end_date=${getCheckOutDate()}&adults=2&children_ages=&rooms=1`)}
+                >
+                  <div className="h-[340px] bg-gray-200 rounded-lg overflow-hidden">
+                    {/* Hotel image from Fora API */}
+                    {hotel.image ? (
+                      <img 
+                        src={`https://media.fora.travel/foratravelportal/image/upload/c_fill,w_384,h_384,g_auto/f_auto/q_auto/v1/${hotel.image}?_a=BAVAZGDW0`}
+                        alt={hotel.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          // Fallback to gradient if image fails to load
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.nextElementSibling?.classList.remove('hidden');
+                        }}
+                      />
+                    ) : null}
+                    {/* Fallback gradient background */}
+                    <div className={`absolute inset-0 bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center ${hotel.image ? 'hidden' : ''}`}>
+                      <div className="text-white text-4xl font-bold text-center">
+                        {hotel.name.split(' ').slice(0, 2).map((word: string) => word[0]).join('')}
+                      </div>
+                    </div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                    <div className="absolute top-3 right-3 w-6 h-6 opacity-30">
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                      </svg>
+                    </div>
+                    {/* Commission badge */}
+                    <div className="absolute top-3 left-3 bg-[#57b3ca] text-white px-2 py-1 rounded text-xs font-semibold">
+                      {hotel.commission_range}
+                    </div>
                   </div>
-              </div>
-                <div className="absolute bottom-0 left-0 right-0 p-4">
-                  <h3 className="text-white font-bold text-lg mb-1">{hotel.name}</h3>
-                  <p className="text-white/80 text-sm">{hotel.location}</p>
+                  <div className="absolute bottom-0 left-0 right-0 p-4">
+                    <h3 className="text-white font-bold text-lg mb-1 line-clamp-2">{hotel.name}</h3>
+                    <p className="text-white/80 text-sm">
+                      {hotel.physical_city && hotel.physical_country 
+                        ? `${hotel.physical_city}, ${hotel.physical_country}`
+                        : hotel.physical_country || 'Location not specified'
+                      }
+                    </p>
+                    {/* Labels */}
+                    
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              // Fallback static data when no supplier data is available
+              [
+                { name: 'The St. Regis Atlanta', location: 'Atlanta, GA' },
+                { name: 'Montage Beverly Hills', location: 'Beverly Hills, CA' },
+                { name: 'St. Regis Washington, D.C.', location: 'Washington, D.C.' },
+                { name: 'Bellagio', location: 'Las Vegas, NV' }
+              ].map((hotel, index) => (
+                <div key={index} className="relative group cursor-pointer">
+                  <div className="h-[340px] bg-gray-200 rounded-lg overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                    <div className="absolute top-3 right-3 w-6 h-6 opacity-30">
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                      </svg>
+                    </div>
+                </div>
+                  <div className="absolute bottom-0 left-0 right-0 p-4">
+                    <h3 className="text-white font-bold text-lg mb-1">{hotel.name}</h3>
+                    <p className="text-white/80 text-sm">{hotel.location}</p>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </section>
 
-                    {/* Featured Hotels Section */}
+                    {/* Explore Trending Destinations Section */}
        <section className="py-24 px-4 bg-gray-50">
          <div className="max-w-[1269px] mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-[#2e2e2e] mb-6">Featured Hotels</h2>
-            <div className="bg-[#57b3ca] h-1.5 w-36 mx-auto rounded"></div>
-            </div>
-            
-                     <div className="grid grid-cols-3 gap-8">
-             {(() => {
-               console.log('🎨 Rendering featured hotels section:');
-               console.log('   - loadingFeatured:', loadingFeatured);
-               console.log('   - featuredHotels.length:', featuredHotels.length);
-               console.log('   - featuredHotels:', featuredHotels);
-               return null;
-             })()}
-             {loadingFeatured ? (
-               // Loading state
-               Array.from({ length: 3 }).map((_, index) => (
-                 <div key={index} className="bg-white rounded-xl overflow-hidden shadow-lg animate-pulse">
-                   <div className="h-[340px] bg-gray-200 relative"></div>
-                   <div className="p-6">
-                     <div className="h-6 bg-gray-200 rounded mb-2"></div>
-                     <div className="h-4 bg-gray-200 rounded mb-4"></div>
-                     <div className="flex items-center gap-8">
-                       {Array.from({ length: 4 }).map((_, i) => (
-                         <div key={i} className="h-4 bg-gray-200 rounded w-8"></div>
-                       ))}
-                     </div>
-                   </div>
-                    </div>
-               ))
-             ) : featuredHotels.length > 0 ? (
-                             // Real data
-              featuredHotels.slice(0, 3).map((hotel) => (
-                <div 
-                  key={hotel.id} 
-                  className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
-                  onClick={() => router.push(`/hotel/${hotel.id}?currency=USD&start_date=2025-08-14&end_date=2025-08-22&adults=2&children_ages=&rooms=1`)}
-                >
-                   <div className="h-[340px] bg-gray-200 relative">
-                     {/* Hotel image from Fora API */}
-                     {hotel.image ? (
-                       <img 
-                         src={`https://media.fora.travel/foratravelportal/image/upload/c_thumb,w_3840,h_1668,g_center/f_auto/q_auto/v1/${hotel.image}`}
-                         alt={hotel.name}
-                         className="w-full h-full object-cover"
-                         onError={(e) => {
-                           // Fallback to gradient if image fails to load
-                           const target = e.target as HTMLImageElement;
-                           target.style.display = 'none';
-                           target.nextElementSibling?.classList.remove('hidden');
-                         }}
-                       />
-                     ) : null}
-                     {/* Fallback gradient background */}
-                     <div className={`absolute inset-0 bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center ${hotel.image ? 'hidden' : ''}`}>
-                       <div className="text-white text-4xl font-bold text-center">
-                         {hotel.name.split(' ').slice(0, 2).map((word: string) => word[0]).join('')}
-                    </div>
-                  </div>
-                     <div className="absolute top-3 right-3 w-6 h-6 opacity-30">
-                       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                       </svg>
-                     </div>
-                     <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent">
-                       <div className="flex justify-between items-center">
-                         <span className="text-white text-lg font-semibold">{hotel.commission_range}</span>
-                      <div className="flex gap-1">
-                           {hotel.labels.slice(0, 4).map((label: any, index: number) => (
-                             <div key={index} className="w-2 h-2 bg-white rounded-full"></div>
-                        ))}
-                      </div>
-                    </div>
-                     </div>
-                   </div>
-                   <div className="p-6">
-                     <h3 className="text-lg font-bold text-[#484848] mb-2 line-clamp-2">{hotel.name}</h3>
-                     <p className="text-sm text-[#9a9a9a] mb-4">
-                       {hotel.physical_city && hotel.physical_country 
-                         ? `${hotel.physical_city}, ${hotel.physical_country}`
-                         : hotel.physical_country || 'Location not specified'
-                       }
-                     </p>
-                     <div className="flex items-center gap-4 text-sm text-[#484848]">
-                       <div className="flex items-center gap-2">
-                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
-                         </svg>
-                         <span>{hotel.labels.length}</span>
-                       </div>
-                       <div className="flex items-center gap-2">
-                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                         </svg>
-                         <span>1</span>
-                       </div>
-                       <div className="flex items-center gap-2">
-                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                         </svg>
-                         <span>{hotel.commission_range}</span>
-                       </div>
-                       <div className="flex items-center gap-2">
-                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                         </svg>
-                         <span>0</span>
-                       </div>
-                     </div>
-                   </div>
-                 </div>
-               ))
-             ) : (
-               // Fallback when no data
-               <div className="col-span-3 text-center py-12">
-                 <p className="text-gray-500 text-lg">No featured hotels available at the moment.</p>
-               </div>
-             )}
-           </div>
-                    </div>
-      </section>
-                    
-                    {/* Browse More Hotels Section */}
-       <section className="py-24 px-4">
-         <div className="max-w-[1269px] mx-auto">
-          <div className="bg-gray-200 rounded-xl p-16 relative overflow-hidden">
-            <div className="relative z-10 max-w-md">
-              <h2 className="text-4xl font-bold text-white mb-6 leading-tight">Browse For More Hotels</h2>
-              <p className="text-white text-lg mb-8">Explore Hotel by their categories/types...</p>
-              <button 
-                onClick={handleFindHotelClick}
-                className="bg-[#57b3ca] text-white px-10 py-4 rounded-[30px] font-bold hover:bg-[#4a9bb0] transition-colors"
-              >
-                Find your Hotel
-              </button>
-                        </div>
-                        </div>
-                      </div>
-      </section>
-
-                    {/* Hotel Booking Tips Section */}
-       <section className="py-24 px-4">
-         <div className="max-w-[1269px] mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-[#2e2e2e] mb-6">Hotel Booking Tips</h2>
+            <h2 className="text-4xl font-bold text-[#2e2e2e] mb-6">Explore Trending Destinations</h2>
             <div className="bg-[#57b3ca] h-1.5 w-36 mx-auto rounded"></div>
           </div>
           
-          <div className="grid grid-cols-3 gap-8 mb-12">
-            {[
-              { title: 'Choose the right Hotel !', category: 'Travel Basics' },
-              { title: 'Book Hotels Smart', category: 'Smart Savings' },
-              { title: 'Essential Hotel Amenities', category: 'Guest Experience' }
-            ].map((tip, index) => (
-              <div key={index} className="group cursor-pointer">
-                <div className="h-[340px] bg-gray-200 rounded-xl mb-4"></div>
-                <h3 className="text-lg font-bold text-[#484848] mb-2">{tip.title}</h3>
-                <p className="text-sm text-[#9a9a9a]">{tip.category}</p>
-                          </div>
-                        ))}
-                    </div>
-                    
-          <div className="text-center">
-            <button 
-              onClick={handleViewAllBlogsClick}
-              className="bg-[#57b3ca] text-white px-10 py-4 rounded-[30px] font-bold hover:bg-[#4a9bb0] transition-colors"
+          {/* Asymmetrical Grid Layout */}
+          <div className="grid grid-cols-12 gap-6 h-[600px]">
+            {/* England - Left Large Card */}
+            <div 
+              className="col-span-4 relative group cursor-pointer overflow-hidden rounded-xl"
+              onClick={() => router.push(`/search?location=England&checkin=${getCurrentDate()}&checkout=${getCheckOutDate()}&adults=2&children=1&rooms=1`)}
             >
-              View All Blogs
-            </button>
-                    </div>
-                  </div>
-      </section>
-
-                    {/* Why Book With Us Section */}
-       <section className="py-24 px-4">
-         <div className="max-w-[1269px] mx-auto">
-          <div className="grid grid-cols-2 gap-16 items-center">
-            <div>
-              <h2 className="text-4xl font-bold text-[#2e2e2e] mb-6">Why Book With Us</h2>
-              <div className="bg-[#57b3ca] h-1.5 w-36 mb-8"></div>
-              <p className="text-xl text-[#121212] mb-8 leading-relaxed">
-                At vero eos et accusamus et iusto odio dignissimos ducimus qui
-                blanditiis praesentium voluptatum deleniti atque corrupti quos
-                dolores et quas molestias excepturi sint occaecati cupiditate non
-                provident, similique sunt in culpa qui officia deserunt mollitia
-                animi, id est laborum et dolorum fuga.
-              </p>
-              <div className="flex gap-6 mb-8">
-                <a href="#" className="text-xl font-bold text-[#484848] hover:text-[#57b3ca] transition-colors">Ask A Question</a>
-                <a href="#" className="text-xl font-bold text-[#484848] hover:text-[#57b3ca] transition-colors">Find A Property</a>
-                </div>
-              <button 
-                onClick={handleDiscoverMoreClick}
-                className="bg-[#57b3ca] text-white px-10 py-4 rounded-[30px] font-bold hover:bg-[#4a9bb0] transition-colors"
-              >
-                Discover More
-              </button>
+              <img 
+                src="/England.png" 
+                alt="England" 
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+              <div className="absolute bottom-6 left-6 right-6">
+                <h3 className="text-white text-3xl font-bold">England</h3>
+              </div>
             </div>
-            <div className="h-[439px] bg-gray-200 rounded-lg"></div>
+
+            {/* Middle Column */}
+            <div className="col-span-4 flex flex-col gap-6">
+              {/* Italy - Top Middle Card */}
+              <div 
+                className="flex-1 relative group cursor-pointer overflow-hidden rounded-xl"
+                onClick={() => router.push(`/search?location=Italy&checkin=${getCurrentDate()}&checkout=${getCheckOutDate()}&adults=2&children=1&rooms=1`)}
+              >
+                <img 
+                  src="/Italy.png" 
+                  alt="Italy" 
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                <div className="absolute bottom-4 left-4 right-4">
+                  <h3 className="text-white text-2xl font-bold">Italy</h3>
+                </div>
+              </div>
+
+              {/* Greece - Bottom Middle Card */}
+              <div 
+                className="flex-1 relative group cursor-pointer overflow-hidden rounded-xl"
+                onClick={() => router.push(`/search?location=Greece&checkin=${getCurrentDate()}&checkout=${getCheckOutDate()}&adults=2&children=1&rooms=1`)}
+              >
+                <img 
+                  src="/Greece.png" 
+                  alt="Greece" 
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                <div className="absolute bottom-4 left-4 right-4">
+                  <h3 className="text-white text-2xl font-bold">Greece</h3>
+                </div>
+              </div>
+            </div>
+
+            {/* Switzerland - Right Large Card */}
+            <div 
+              className="col-span-4 relative group cursor-pointer overflow-hidden rounded-xl"
+              onClick={() => router.push(`/search?location=Switzerland&checkin=${getCurrentDate()}&checkout=${getCheckOutDate()}&adults=2&children=1&rooms=1`)}
+            >
+              <img 
+                src="/Switzerland.png" 
+                alt="Switzerland" 
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+              <div className="absolute bottom-6 left-6 right-6">
+                <h3 className="text-white text-3xl font-bold">Switzerland</h3>
+              </div>
+            </div>
           </div>
         </div>
       </section>
+                    
+                    {/* Browse More Hotels Section */}
+       
+
+                    {/* Hotel Booking Tips Section */}
+       
+
+                        {/* Why Book With Us Section */}
+           <section className="py-24 px-4">
+             <div className="max-w-[1269px] mx-auto">
+              <div className="grid grid-cols-2 gap-16 items-center">
+                <div>
+                  <h2 className="text-4xl font-bold text-[#2e2e2e] mb-6">Why Book With Us</h2>
+                  <div className="bg-[#57b3ca] h-1.5 w-36 mb-8"></div>
+                  <p className="text-xl text-[#121212] mb-8 leading-relaxed">
+                    At vero eos et accusamus et iusto odio dignissimos ducimus qui
+                    blanditiis praesentium voluptatum deleniti atque corrupti quos
+                    dolores et quas molestias excepturi sint occaecati cupiditate non
+                    provident, similique sunt in culpa qui officia deserunt mollitia
+                    animi, id est laborum et dolorum fuga.
+                  </p>
+                  <div className="flex gap-6 mb-8">
+                    <a href="#" className="text-xl font-bold text-[#484848] hover:text-[#57b3ca] transition-colors">Ask A Question</a>
+                    <a href="#" className="text-xl font-bold text-[#484848] hover:text-[#57b3ca] transition-colors">Find A Property</a>
+                    </div>
+                  <button 
+                    onClick={handleDiscoverMoreClick}
+                    className="bg-[#57b3ca] text-white px-10 py-4 rounded-[30px] font-bold hover:bg-[#4a9bb0] transition-colors"
+                  >
+                    Discover More
+                  </button>
+                </div>
+                <div className="h-[439px] rounded-lg overflow-hidden">
+                  <img 
+                    src="/why_book_with_us.jpg" 
+                    alt="Why Book With Us" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </div>
+            </div>
+          </section>
 
                     {/* Newsletter Section */}
        <section className="py-24 px-4">

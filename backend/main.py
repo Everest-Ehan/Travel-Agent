@@ -145,6 +145,20 @@ def get_trips_data(client_id: str):
         raise HTTPException(status_code=500, detail="An internal server error occurred.")
 
 
+@app.get("/api/fora-token")
+async def get_fora_token():
+    """
+    Get the Fora API bearer token for frontend use.
+    This endpoint provides the token that should be used for Fora API calls.
+    """
+    try:
+        # Get the Fora API bearer token from the auth service
+        token = auth_service.get_access_token()
+        return {"token": token}
+    except Exception as e:
+        print(f"Error getting Fora token: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get Fora API token")
+
 @app.get("/api/trips")
 async def get_trips(client_id: str = Query(..., description="The client ID to search trips for.")):
     """
@@ -734,7 +748,7 @@ async def create_booking(request: Request):
         print(f"Request payload size: {len(json.dumps(booking_data))} bytes")
         
         response = requests.post(url, headers=headers, cookies=cookies, json=booking_data, timeout=20)
-        
+        print(f"Response: {response}")
         print(f"Response status: {response.status_code}")
         print(f"Response headers: {dict(response.headers)}")
         print(f"Response content: {response.text}")

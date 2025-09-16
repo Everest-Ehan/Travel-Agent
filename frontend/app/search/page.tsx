@@ -20,14 +20,27 @@ export default function Home() {
   const [loadingCard, setLoadingCard] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [showSignUpPopup, setShowSignUpPopup] = useState(false)
+
+  // Generate current date and 2 days from now
+  const getCurrentDate = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+  };
+
+  const getCheckOutDate = () => {
+    const today = new Date();
+    const checkOut = new Date(today);
+    checkOut.setDate(today.getDate() + 2);
+    return checkOut.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+  };
   
           // Search filters state
         const [filters, setFilters] = useState({
           adults: 2,
           children_ages: [] as number[],
           currency: 'USD',
-          start_date: '2025-08-14',
-          end_date: '2025-08-22',
+          start_date: getCurrentDate(),
+          end_date: getCheckOutDate(),
           rooms: 1,
           supplierType: 'hotels'
         })

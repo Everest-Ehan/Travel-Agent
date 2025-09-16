@@ -572,86 +572,98 @@ export class ApiService {
     }
   }
 
-  // Fetch featured hotels from Fora API
+  // Fetch featured hotels from our backend (not Fora API directly)
   static async fetchFeaturedHotels(): Promise<any[]> {
-    const url = 'https://api.fora.travel/v2/user-supplier-list/bdd9fe6d-4482-4996-9508-536f89c2008d/suppliers/';
-    
-    console.log('🔍 Fetching featured hotels from:', url);
-    console.log('🔍 Starting API call...');
+    const url = `${API_BASE_URL}/api/search?query=featured`;
     
     try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        },
+      });
+      
+      if (!response.ok) {
+        console.error('❌ Featured hotels response not ok:', response.status, response.statusText);
+        return [];
+      }
+      
+      const data = await response.json();
+      console.log('✅ Featured hotels fetched:', data?.results?.length || 0);
+      
+      return data?.results || [];
+      
+    } catch (error) {
+      console.error('💥 FAILED to fetch featured hotels:', error);
+      return [];
+    }
+  }
+
+  // Get Fora API bearer token from our backend
+  static async getForaToken(): Promise<string> {
+    const url = `${API_BASE_URL}/api/fora-token`;
+    
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        },
+      });
+      
+      if (!response.ok) {
+        console.error('❌ Failed to get Fora token:', response.status, response.statusText);
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log('✅ Fora token obtained successfully');
+      return data.token;
+      
+    } catch (error) {
+      console.error('💥 Failed to get Fora token:', error);
+      throw error;
+    }
+  }
+
+  // Fetch supplier list from Fora API using backend-provided token
+  static async fetchSupplierList(): Promise<any[]> {
+    const url = 'https://api.fora.travel/v2/user-supplier-list/bdd9fe6d-4482-4996-9508-536f89c2008d/suppliers';
+    
+    console.log('🔍 Fetching supplier list from Fora API...');
+    
+    try {
+      // First, get the Fora API token from our backend
+      const foraToken = await this.getForaToken();
+      
       const response = await fetch(url, {
         method: 'GET',
         mode: 'cors',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
+          'Authorization': `Bearer ${foraToken}`,
         },
       });
       
-      console.log('📡 Featured hotels response status:', response.status);
-      console.log('📡 Featured hotels response ok:', response.ok);
-      console.log('📡 Featured hotels response headers:', Object.fromEntries(response.headers.entries()));
-      
       if (!response.ok) {
-        console.error('❌ Response not ok:', response.status, response.statusText);
+        console.error('❌ Supplier API error:', response.status, response.statusText);
         const errorText = await response.text();
-        console.error('❌ Error response body:', errorText);
+        console.error('❌ Error details:', errorText);
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       
-      // First get the raw text response
-      console.log('🔍 Getting raw response text...');
-      const responseText = await response.text();
-      console.log('📝 RAW RESPONSE TEXT:', responseText);
+      const data = await response.json();
+      console.log('✅ Supplier list fetched successfully:', data?.length || 0, 'suppliers');
+      console.log('📋 Supplier List Data:', data);
       
-      // Then parse it as JSON
-      console.log('🔍 About to parse JSON response...');
-      console.log('🔍 Response text length:', responseText.length);
-      console.log('🔍 Response text starts with:', responseText.substring(0, 100));
-      
-      let data;
-      try {
-        data = JSON.parse(responseText);
-        console.log('✅ JSON parsing successful!');
-      } catch (parseError) {
-        console.error('💥 JSON parsing failed:', parseError);
-        console.error('💥 Raw text that failed to parse:', responseText);
-        throw new Error(`Failed to parse JSON response: ${parseError}`);
-      }
-      console.log('✅ Featured hotels API SUCCESS!');
-      console.log('✅ RAW API RESPONSE (FULL):', data);
-      console.log('✅ RAW API RESPONSE (STRINGIFIED):', JSON.stringify(data, null, 2));
-      console.log('✅ Response type:', typeof data);
-      console.log('✅ Response is array:', Array.isArray(data));
-      console.log('✅ Featured hotels count:', data ? data.length : 'data is null/undefined');
-      console.log('✅ Featured hotels data structure:', data && data[0] ? Object.keys(data[0]) : 'No first item or data is empty');
-      
-      // Log each hotel's ID to verify
-      if (data && data.length > 0) {
-        console.log('✅ Hotel IDs from API:');
-        data.slice(0, 5).forEach((hotel: any, index: number) => {
-          console.log(`   ${index + 1}. ID: ${hotel.id} | Name: ${hotel.name}`);
-        });
-      }
-      
-      console.log('✅ Returning real API data:', data.length, 'hotels');
       return data;
       
     } catch (error) {
-      console.error('💥 FAILED to fetch featured hotels:', error);
-      console.error('💥 Error type:', error && typeof error === 'object' && 'constructor' in error ? (error as any).constructor.name : typeof error);
-      console.error('💥 Error message:', error instanceof Error ? error.message : String(error));
-      console.error('💥 Error stack:', error instanceof Error ? error.stack : undefined);
-      
-      // Check if it's a CORS error
-      if (error instanceof TypeError && error.message && error.message.includes('fetch')) {
-        console.error('🚨 This appears to be a CORS or network error');
-        console.error('🚨 The browser may be blocking the external API call');
-      }
-      
-      // No mock data - return empty array or throw error
-      console.log('🔄 API failed, returning empty array - no mock data');
+      console.error('💥 Failed to fetch supplier list:', error);
       return [];
     }
   }

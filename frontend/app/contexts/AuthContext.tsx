@@ -46,10 +46,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [emailVerified, setEmailVerified] = useState(false)
   const [userClient, setUserClient] = useState<Client | null>(null)
   const [clientLoading, setClientLoading] = useState(false)
+  const [clientProcessed, setClientProcessed] = useState(false)
 
   // Function to fetch or create a client for the authenticated user
   const fetchOrCreateUserClient = async (user: User) => {
     if (!user.email) return
+    
+    // Prevent multiple client processing for the same user
+    if (clientProcessed && userClient) {
+      console.log('🔄 Client already processed for this user, skipping...')
+      return
+    }
     
     setClientLoading(true)
     try {
@@ -69,6 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (existingClient) {
             console.log('✅ Found existing client:', existingClient.id)
             setUserClient(existingClient)
+            setClientProcessed(true)
             return
           }
         } catch (error) {
@@ -88,6 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (existingClient) {
         console.log('✅ Found existing client by email:', existingClient.id)
         setUserClient(existingClient)
+        setClientProcessed(true)
         // Update the user's client_id in the database
         await auth.storeUserClientId(user.id, existingClient.id)
       } else {
@@ -104,11 +113,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           phone_numbers: []
         }
         
-        const newClient = await ApiService.createClient(clientData)
-        console.log('✅ Created new client:', newClient.id)
-        setUserClient(newClient)
-        // Store the client_id in the user's record
-        await auth.storeUserClientId(user.id, newClient.id)
+        try {
+          const newClient = await ApiService.createClient(clientData)
+          console.log('✅ Created new client:', newClient.id)
+          setUserClient(newClient)
+          setClientProcessed(true)
+          // Store the client_id in the user's record
+          await auth.storeUserClientId(user.id, newClient.id)
+        } catch (createError: any) {
+          console.warn('⚠️ Failed to create client, might already exist:', createError)
+          
+          // If client creation fails with "already exists" error, try to find it again
+          if (createError.message && createError.message.includes('already exists')) {
+            console.log('🔄 Client already exists, searching again with different approach...')
+            try {
+              // Try searching with a more specific query
+              const retryResponse = await ApiService.fetchClients(user.email)
+              const retryClients = retryResponse.results || retryResponse
+              
+              const foundClient = retryClients.find((client: Client) => 
+                client.emails.some(emailObj => emailObj.email.toLowerCase() === user.email!.toLowerCase())
+              )
+              
+              if (foundClient) {
+                console.log('✅ Found existing client on retry:', foundClient.id)
+                setUserClient(foundClient)
+                setClientProcessed(true)
+                await auth.storeUserClientId(user.id, foundClient.id)
+              } else {
+                console.warn('⚠️ Could not find existing client even after retry')
+              }
+            } catch (retryError) {
+              console.error('❌ Retry search also failed:', retryError)
+            }
+          }
+        }
       }
     } catch (error) {
       console.error('❌ Error fetching/creating user client:', error)
@@ -148,6 +187,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           await fetchOrCreateUserClient(session.user)
         } else if (event === 'SIGNED_OUT') {
           setUserClient(null)
+          setClientProcessed(false)
         }
       }
     )
